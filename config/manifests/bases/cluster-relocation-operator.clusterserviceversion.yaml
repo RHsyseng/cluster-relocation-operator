@@ -4,6 +4,8 @@ metadata:
   annotations:
     alm-examples: '[]'
     capabilities: Basic Install
+    operators.openshift.io/infrastructure-features: '["disconnected"]'
+    repository: https://github.com/RHsyseng/cluster-relocation-operator
   name: cluster-relocation-operator.v0.0.0
   namespace: placeholder
 spec:
@@ -37,7 +39,7 @@ spec:
   - relocation
   links:
   - name: Cluster Relocation Operator
-    url: https://cluster-relocation-operator.domain
+    url: https://rhsyseng.github.io
   maturity: alpha
   provider:
     name: Cluster Relocation Operator
