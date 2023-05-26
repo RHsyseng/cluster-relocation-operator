@@ -1,0 +1,12 @@
+apiVersion: rhsyseng.github.io/v1beta1
+kind: ClusterRelocation
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrelocation
+    app.kubernetes.io/instance: clusterrelocation-sample
+    app.kubernetes.io/part-of: cluster-relocation-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: cluster-relocation-operator
+  name: clusterrelocation-sample
+spec:
+  # TODO(user): Add fields here

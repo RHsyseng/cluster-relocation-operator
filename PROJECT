@@ -10,4 +10,12 @@ plugins:
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: cluster-relocation-operator
 repo: github.com/RHsyseng/cluster-relocation-operator
+resources:
+- api:
+    crdVersion: v1
+  controller: true
+  domain: rhsyseng.github.io
+  kind: ClusterRelocation
+  path: github.com/RHsyseng/cluster-relocation-operator/api/v1beta1
+  version: v1beta1
 version: "3"
