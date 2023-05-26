@@ -7,7 +7,6 @@
 *.dll
 *.so
 *.dylib
-
 bin
 
 # Test binary, built with `go test -c`
@@ -21,3 +20,8 @@ bin
 
 # Go workspace file
 go.work
+
+database/
+bundle/
+bundle.Dockerfile
+catalog.Dockerfile

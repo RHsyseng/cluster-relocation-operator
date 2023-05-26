@@ -1,0 +1,33 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - rhsyseng.github.io
+  resources:
+  - clusterrelocations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rhsyseng.github.io
+  resources:
+  - clusterrelocations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rhsyseng.github.io
+  resources:
+  - clusterrelocations/status
+  verbs:
+  - get
+  - patch
+  - update
