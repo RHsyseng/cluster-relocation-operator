@@ -17,25 +17,52 @@ limitations under the License.
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // ClusterRelocationSpec defines the desired state of ClusterRelocation
 type ClusterRelocationSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of ClusterRelocation. Edit clusterrelocation_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// ApiCertRef is a reference to a TLS secret that will be used for the API server.
+	// If it is omitted, a self-signed certificate will be generated.
+	ApiCertRef corev1.SecretReference `json:"apiCertRef,omitempty"`
+
+	// CatalogSources define new CatalogSources to install on the cluster.
+	// If defined, existing CatalogSources will be removed.
+	CatalogSources []CatalogSource `json:"catalogSources,omitempty"`
+
+	// Domain defines the new base domain for the cluster.
+	Domain string `json:"domain"`
+
+	// ImageDigestSources will be converted into ImageContentSourcePolicys on the cluster.
+	// If defined, existing ImageContentSourcePolicys will be removed.
+	ImageDigestSources []ImageDigestSource `json:"imageDigestSources,omitempty"`
+
+	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
+	// If it is omitted, a self-signed certificate will be generated.
+	IngressCertRef corev1.SecretReference `json:"ingressCertRef,omitempty"`
+
+	// PullSecretRef is a reference to new cluster-wide pull secret.
+	// If defined, it will replace the secret located at openshift-config/pull-secret.
+	PullSecretRef corev1.SecretReference `json:"pullSecretRef,omitempty"`
+
+	// RegistryCert is a new trusted CA certificate.
+	// It will be added to image.config.openshift.io/cluster (additionalTrustedCA).
+	RegistryCert RegistryCert `json:"registryCert,omitempty"`
+
+	// SSHKeys defines a list of authorized SSH keys for the 'core' user.
+	// If defined, it will replace the existing authorized SSH key(s).
+	SSHKeys []string `json:"sshKeys,omitempty"`
 }
 
 // ClusterRelocationStatus defines the observed state of ClusterRelocation
 type ClusterRelocationStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Conditions represent the latest available observations of an object's state
+	Conditions []metav1.Condition `json:"conditions"`
 }
 
 //+kubebuilder:object:root=true
@@ -47,7 +74,7 @@ type ClusterRelocation struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterRelocationSpec   `json:"spec,omitempty"`
+	Spec   ClusterRelocationSpec   `json:"spec"`
 	Status ClusterRelocationStatus `json:"status,omitempty"`
 }
 
@@ -62,4 +89,33 @@ type ClusterRelocationList struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterRelocation{}, &ClusterRelocationList{})
+}
+
+// ImageDigestSource defines a list of sources/repositories that can be used to pull content.
+type ImageDigestSource struct {
+	// Source is the repository that users refer to, e.g. in image pull specifications.
+	Source string `json:"source"`
+
+	// Mirrors is one or more repositories that may also contain the same images.
+	// +optional
+	Mirrors []string `json:"mirrors,omitempty"`
+}
+
+type CatalogSource struct {
+	// Name is the name of the CatalogSource.
+	Name string `json:"name"`
+
+	// Image is an operator-registry container image to instantiate a registry-server with.
+	Image string `json:"image"`
+}
+
+type RegistryCert struct {
+	// RegistryHostname is the hostname of the new registry.
+	RegistryHostname string `json:"registryHostname"`
+
+	// RegistryPort is the port nubmer that the registry is served on.
+	RegistryPort string `json:"registryPort,omitempty"`
+
+	// Certificate is the certificate for the trusted certificate authority associated with the registry.
+	Certificate string `json:"certificate"`
 }
