@@ -8,6 +8,7 @@ layout:
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
+  sdk.x-openshift.io/v1: {}
 projectName: cluster-relocation-operator
 repo: github.com/RHsyseng/cluster-relocation-operator
 resources:
