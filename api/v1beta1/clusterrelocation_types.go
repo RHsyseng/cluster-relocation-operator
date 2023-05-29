@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,30 +27,30 @@ type ClusterRelocationSpec struct {
 
 	// ApiCertRef is a reference to a TLS secret that will be used for the API server.
 	// If it is omitted, a self-signed certificate will be generated.
-	ApiCertRef *KubeRef `json:"apiCertRef,omitempty"`
+	ApiCertRef corev1.ObjectReference `json:"apiCertRef,omitempty"`
 
 	// CatalogSources define new CatalogSources to install on the cluster.
 	// If defined, existing CatalogSources will be removed.
-	CatalogSources []CatalogSources `json:"catalogSources,omitempty"`
+	CatalogSources []CatalogSource `json:"catalogSources,omitempty"`
 
 	// Domain defines the new base domain for the cluster.
 	Domain string `json:"domain"`
 
 	// ImageDigestSources will be converted into ImageContentSourcePolicys on the cluster.
 	// If defined, existing ImageContentSourcePolicys will be removed.
-	ImageDigestSources []ImageDigestSources `json:"imageDigestSources,omitempty"`
+	ImageDigestSources []ImageDigestSource `json:"imageDigestSources,omitempty"`
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
 	// If it is omitted, a self-signed certificate will be generated.
-	IngressCertRef *KubeRef `json:"ingressCertRef,omitempty"`
+	IngressCertRef corev1.ObjectReference `json:"ingressCertRef,omitempty"`
 
 	// PullSecretRef is a reference to new cluster-wide pull secret.
 	// If defined, it will replace the secret located at openshift-config/pull-secret.
-	PullSecretRef *KubeRef `json:"pullSecretRef,omitempty"`
+	PullSecretRef corev1.ObjectReference `json:"pullSecretRef,omitempty"`
 
 	// RegistryCertRef is a reference to a ConfigMap with a new trusted certificate.
 	// It will be added to image.config.openshift.io/cluster (additionalTrustedCA).
-	RegistryCertRef *KubeRef `json:"registryCertRef,omitempty"`
+	RegistryCertRef corev1.ObjectReference `json:"registryCertRef,omitempty"`
 
 	// SSHKeys defines a list of authorized SSH keys for the 'core' user.
 	// If defined, it will replace the existing authorized SSH key(s).
@@ -90,23 +91,17 @@ func init() {
 	SchemeBuilder.Register(&ClusterRelocation{}, &ClusterRelocationList{})
 }
 
-type KubeRef struct {
-	// Namespace is the namespace of the referenced object.
-	Namespace string `json:"namespace"`
-
-	// Name is the name of the referenced object.
-	Name string `json:"name"`
-}
-
-type ImageDigestSources struct {
-	// Mirrors is one or more repositories that may also contain the same images.
-	Mirrors []string `json:"mirrors"`
-
+// ImageDigestSource defines a list of sources/repositories that can be used to pull content.
+type ImageDigestSource struct {
 	// Source is the repository that users refer to, e.g. in image pull specifications.
 	Source string `json:"source"`
+
+	// Mirrors is one or more repositories that may also contain the same images.
+	// +optional
+	Mirrors []string `json:"mirrors,omitempty"`
 }
 
-type CatalogSources struct {
+type CatalogSource struct {
 	// Name is the name of the CatalogSource.
 	Name string `json:"name"`
 
