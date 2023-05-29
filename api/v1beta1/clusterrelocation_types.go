@@ -48,9 +48,9 @@ type ClusterRelocationSpec struct {
 	// If defined, it will replace the secret located at openshift-config/pull-secret.
 	PullSecretRef corev1.SecretReference `json:"pullSecretRef,omitempty"`
 
-	// RegistryCertRef is a reference to a ConfigMap with a new trusted certificate.
+	// RegistryCert is a new trusted CA certificate.
 	// It will be added to image.config.openshift.io/cluster (additionalTrustedCA).
-	RegistryCertRef corev1.ObjectReference `json:"registryCertRef,omitempty"`
+	RegistryCert RegistryCert `json:"registryCert,omitempty"`
 
 	// SSHKeys defines a list of authorized SSH keys for the 'core' user.
 	// If defined, it will replace the existing authorized SSH key(s).
@@ -107,4 +107,15 @@ type CatalogSource struct {
 
 	// Image is an operator-registry container image to instantiate a registry-server with.
 	Image string `json:"image"`
+}
+
+type RegistryCert struct {
+	// RegistryHostname is the hostname of the new registry.
+	RegistryHostname string `json:"registryHostname"`
+
+	// RegistryPort is the port nubmer that the registry is served on.
+	RegistryPort string `json:"registryPort,omitempty"`
+
+	// Certificate is the certificate for the trusted certificate authority associated with the registry.
+	Certificate string `json:"certificate"`
 }
