@@ -35,14 +35,121 @@ spec:
           spec:
             description: ClusterRelocationSpec defines the desired state of ClusterRelocation
             properties:
-              foo:
-                description: Foo is an example field of ClusterRelocation. Edit clusterrelocation_types.go
-                  to remove/update
+              apiCertRef:
+                description: ApiCertRef is a reference to a TLS secret that will be
+                  used for the API server. If it is omitted, a self-signed certificate
+                  will be generated.
+                properties:
+                  name:
+                    description: Name is the name of the referenced object.
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the referenced object.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              catalogSources:
+                description: CatalogSources define new CatalogSources to install on
+                  the cluster.
+                items:
+                  properties:
+                    image:
+                      description: Image is an operator-registry container image to
+                        instantiate a registry-server with.
+                      type: string
+                    name:
+                      description: Name is the name of the CatalogSource.
+                      type: string
+                  required:
+                  - image
+                  - name
+                  type: object
+                type: array
+              domain:
+                description: Domain defines the new base domain for the cluster.
                 type: string
+              imageDigestSources:
+                description: ImageDigestSources will be converted into ImageContentSourcePolicys
+                  on the cluster.
+                items:
+                  properties:
+                    mirrors:
+                      description: Mirrors is one or more repositories that may also
+                        contain the same images.
+                      items:
+                        type: string
+                      type: array
+                    source:
+                      description: Source is the repository that users refer to, e.g.
+                        in image pull specifications.
+                      type: string
+                  required:
+                  - mirrors
+                  - source
+                  type: object
+                type: array
+              ingressCertRef:
+                description: IngressCertRef is a reference to a TLS secret that will
+                  be used for the Ingress Controller. If it is omitted, a self-signed
+                  certificate will be generated.
+                properties:
+                  name:
+                    description: Name is the name of the referenced object.
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the referenced object.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              pullSecretRef:
+                description: PullSecretRef is a reference to new cluster-wide pull
+                  secret. It will replace the secret located at openshift-config/pull-secret.
+                  If omitted, the existing pull secret will remain untouched.
+                properties:
+                  name:
+                    description: Name is the name of the referenced object.
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the referenced object.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              registryCertRef:
+                description: RegistryCertRef is a reference to a ConfigMap with a
+                  new trusted certifiate. It will be added to image.config.openshift.io/cluster
+                  (additionalTrustedCA).
+                properties:
+                  name:
+                    description: Name is the name of the referenced object.
+                    type: string
+                  namespace:
+                    description: Namespace is the namespace of the referenced object.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              sshKeys:
+                description: SSHKeys defines a list of authorized SSH keys for the
+                  'core' user. If defined, it will replace the existing authorized
+                  SSH key(s).
+                items:
+                  type: string
+                type: array
+            required:
+            - domain
             type: object
           status:
             description: ClusterRelocationStatus defines the observed state of ClusterRelocation
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
