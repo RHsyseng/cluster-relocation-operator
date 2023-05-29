@@ -14,7 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  OPERATOR_SDK_VERSION: "v1.28.1"
+  OPERATOR_OCP_VERSION: "4.13.0"
+  OPERATOR_SDK_VERSION: "v1.28.0"
 
 jobs:
   build-operator:
@@ -36,6 +37,11 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
+      - name: Setup registry access
+        run: echo "$PULL_SECRET" > ~/.docker/config.json
+        env:
+          PULL_SECRET: ${{ secrets.PULL_SECRET }}
+
       - name: Log in to Quay.io
         uses: docker/login-action@v2
         if: ${{ github.event_name != 'pull_request' }}
@@ -46,11 +52,8 @@ jobs:
 
       - name: install operator-sdk
         run: |
-          export ARCH=$(case $(uname -m) in x86_64) echo -n amd64 ;; aarch64) echo -n arm64 ;; *) echo -n $(uname -m) ;; esac)
-          export OS=$(uname | awk '{print tolower($0)}')
-          export OPERATOR_SDK_DL_URL=https://github.com/operator-framework/operator-sdk/releases/download/${{ env.OPERATOR_SDK_VERSION }}
-          curl -L -o /usr/local/bin/operator-sdk ${OPERATOR_SDK_DL_URL}/operator-sdk_${OS}_${ARCH}
-          chmod +x /usr/local/bin/operator-sdk
+          export OPERATOR_SDK_DL_URL=https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/operator-sdk/${{ env.OPERATOR_OCP_VERSION }}/operator-sdk-${{ env.OPERATOR_SDK_VERSION }}-ocp-linux-x86_64.tar.gz
+          curl -L ${OPERATOR_SDK_DL_URL} | tar -xz --strip-components=2 -C /usr/local/bin ./x86_64/operator-sdk
 
       - name: Build operator
         if: ${{ github.event_name == 'pull_request' }}

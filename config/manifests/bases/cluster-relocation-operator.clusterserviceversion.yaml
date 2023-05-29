@@ -5,7 +5,6 @@ metadata:
     alm-examples: "[]"
     capabilities: Basic Install
     operators.openshift.io/infrastructure-features: '["disconnected"]'
-    repository: https://github.com/RHsyseng/cluster-relocation-operator
   name: cluster-relocation-operator.v0.0.0
   namespace: placeholder
 spec:
@@ -38,6 +37,11 @@ spec:
   links:
     - name: Cluster Relocation Operator
       url: https://rhsyseng.github.io
+  maintainers:
+    - email: lmcnaugh@redhat.com
+      name: Logan McNaughton
+    - email: dchavero@redhat.com
+      name: Daniel Chavero
   maturity: alpha
   minKubeVersion: 1.25.0
   provider:
