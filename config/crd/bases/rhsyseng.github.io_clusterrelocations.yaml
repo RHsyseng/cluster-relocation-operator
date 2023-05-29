@@ -52,7 +52,7 @@ spec:
                 type: object
               catalogSources:
                 description: CatalogSources define new CatalogSources to install on
-                  the cluster.
+                  the cluster. If defined, existing CatalogSources will be removed.
                 items:
                   properties:
                     image:
@@ -72,7 +72,8 @@ spec:
                 type: string
               imageDigestSources:
                 description: ImageDigestSources will be converted into ImageContentSourcePolicys
-                  on the cluster.
+                  on the cluster. If defined, existing ImageContentSourcePolicys will
+                  be removed.
                 items:
                   properties:
                     mirrors:
@@ -107,8 +108,7 @@ spec:
                 type: object
               pullSecretRef:
                 description: PullSecretRef is a reference to new cluster-wide pull
-                  secret. It will replace the secret located at openshift-config/pull-secret.
-                  If omitted, the existing pull secret will remain untouched.
+                  secret. If defined, it will replace the secret located at openshift-config/pull-secret.
                 properties:
                   name:
                     description: Name is the name of the referenced object.
@@ -122,7 +122,7 @@ spec:
                 type: object
               registryCertRef:
                 description: RegistryCertRef is a reference to a ConfigMap with a
-                  new trusted certifiate. It will be added to image.config.openshift.io/cluster
+                  new trusted certificate. It will be added to image.config.openshift.io/cluster
                   (additionalTrustedCA).
                 properties:
                   name:

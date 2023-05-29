@@ -29,12 +29,14 @@ type ClusterRelocationSpec struct {
 	ApiCertRef *KubeRef `json:"apiCertRef,omitempty"`
 
 	// CatalogSources define new CatalogSources to install on the cluster.
+	// If defined, existing CatalogSources will be removed.
 	CatalogSources []CatalogSources `json:"catalogSources,omitempty"`
 
 	// Domain defines the new base domain for the cluster.
 	Domain string `json:"domain"`
 
 	// ImageDigestSources will be converted into ImageContentSourcePolicys on the cluster.
+	// If defined, existing ImageContentSourcePolicys will be removed.
 	ImageDigestSources []ImageDigestSources `json:"imageDigestSources,omitempty"`
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
@@ -42,11 +44,10 @@ type ClusterRelocationSpec struct {
 	IngressCertRef *KubeRef `json:"ingressCertRef,omitempty"`
 
 	// PullSecretRef is a reference to new cluster-wide pull secret.
-	// It will replace the secret located at openshift-config/pull-secret.
-	// If omitted, the existing pull secret will remain untouched.
+	// If defined, it will replace the secret located at openshift-config/pull-secret.
 	PullSecretRef *KubeRef `json:"pullSecretRef,omitempty"`
 
-	// RegistryCertRef is a reference to a ConfigMap with a new trusted certifiate.
+	// RegistryCertRef is a reference to a ConfigMap with a new trusted certificate.
 	// It will be added to image.config.openshift.io/cluster (additionalTrustedCA).
 	RegistryCertRef *KubeRef `json:"registryCertRef,omitempty"`
 
