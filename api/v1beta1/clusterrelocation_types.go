@@ -27,7 +27,7 @@ type ClusterRelocationSpec struct {
 
 	// ApiCertRef is a reference to a TLS secret that will be used for the API server.
 	// If it is omitted, a self-signed certificate will be generated.
-	ApiCertRef corev1.ObjectReference `json:"apiCertRef,omitempty"`
+	ApiCertRef corev1.SecretReference `json:"apiCertRef,omitempty"`
 
 	// CatalogSources define new CatalogSources to install on the cluster.
 	// If defined, existing CatalogSources will be removed.
@@ -42,11 +42,11 @@ type ClusterRelocationSpec struct {
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
 	// If it is omitted, a self-signed certificate will be generated.
-	IngressCertRef corev1.ObjectReference `json:"ingressCertRef,omitempty"`
+	IngressCertRef corev1.SecretReference `json:"ingressCertRef,omitempty"`
 
 	// PullSecretRef is a reference to new cluster-wide pull secret.
 	// If defined, it will replace the secret located at openshift-config/pull-secret.
-	PullSecretRef corev1.ObjectReference `json:"pullSecretRef,omitempty"`
+	PullSecretRef corev1.SecretReference `json:"pullSecretRef,omitempty"`
 
 	// RegistryCertRef is a reference to a ConfigMap with a new trusted certificate.
 	// It will be added to image.config.openshift.io/cluster (additionalTrustedCA).
