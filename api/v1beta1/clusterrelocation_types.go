@@ -62,7 +62,7 @@ type ClusterRelocationStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Conditions represent the latest available observations of an object's state
-	Conditions []metav1.Condition `json:"conditions"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -122,6 +122,7 @@ type RegistryCert struct {
 
 const (
 	ConditionTypeReady string = "Ready"
+	ConditionTypeApi   string = "APIReconciled"
 )
 
 const (
@@ -132,4 +133,12 @@ const (
 	// ValidationFailedReason represents the fact that the validation of
 	// the resource has failed.
 	ValidationFailedReason string = "ValidationFailed"
+
+	// ReconciliationSucceededReason represents the fact that the validation of
+	// the resource has succeeded.
+	ReconciliationSucceededReason string = "ReconciliationSucceeded"
+
+	// ReconciliationFailedReason represents the fact that the validation of
+	// the resource has failed.
+	ReconciliationFailedReason string = "ReconciliationFailed"
 )

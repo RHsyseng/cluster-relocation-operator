@@ -223,8 +223,6 @@ spec:
                   - type
                   type: object
                 type: array
-            required:
-            - conditions
             type: object
         required:
         - spec
