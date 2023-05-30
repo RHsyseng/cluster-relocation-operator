@@ -83,7 +83,7 @@ func validateCR(relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
 		err := fmt.Errorf("invalid name: %s. CR name must be: cluster", relocation.Name)
 		readyCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Reason:             rhsysenggithubiov1beta1.ValidationFailedReason,
 			Message:            err.Error(),
 			Type:               rhsysenggithubiov1beta1.ConditionTypeReady,
 			ObservedGeneration: relocation.GetGeneration(),
@@ -94,8 +94,7 @@ func validateCR(relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
 
 	readyCondition := metav1.Condition{
 		Status:             metav1.ConditionTrue,
-		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-		Message:            "reconciliation succeeded",
+		Reason:             rhsysenggithubiov1beta1.ValidationSucceededReason,
 		Type:               rhsysenggithubiov1beta1.ConditionTypeReady,
 		ObservedGeneration: relocation.GetGeneration(),
 	}

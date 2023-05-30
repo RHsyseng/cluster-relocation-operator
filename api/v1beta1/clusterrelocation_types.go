@@ -125,11 +125,11 @@ const (
 )
 
 const (
-	// ReconciliationSucceededReason represents the fact that the reconciliation of
+	// Validation represents the fact that the validation of
 	// the resource has succeeded.
-	ReconciliationSucceededReason string = "ReconciliationSucceeded"
+	ValidationSucceededReason string = "ValidationSucceeded"
 
-	// ReconciliationFailedReason represents the fact that the reconciliation of
+	// ValidationFailedReason represents the fact that the validation of
 	// the resource has failed.
-	ReconciliationFailedReason string = "ReconciliationFailed"
+	ValidationFailedReason string = "ValidationFailed"
 )
