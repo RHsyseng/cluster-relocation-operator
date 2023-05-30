@@ -125,7 +125,7 @@ const (
 )
 
 const (
-	// Validation represents the fact that the validation of
+	// ValidationSucceededReason represents the fact that the validation of
 	// the resource has succeeded.
 	ValidationSucceededReason string = "ValidationSucceeded"
 
