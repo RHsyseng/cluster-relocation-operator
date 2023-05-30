@@ -69,10 +69,10 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	err = validateCR(relocation)
 	if err != nil {
-		logger.Error(err, "Could not reconcile ClusterRelocation")
+		logger.Error(err, "Could not validate ClusterRelocation")
 		return ctrl.Result{}, nil
 	} else {
-		logger.Info("reconciliation succeeded")
+		logger.Info("validation succeeded")
 	}
 
 	return ctrl.Result{}, nil
