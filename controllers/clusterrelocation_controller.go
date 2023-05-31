@@ -18,13 +18,18 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
+	"github.com/go-logr/logr"
 )
 
 // ClusterRelocationReconciler reconciles a ClusterRelocation object
@@ -47,11 +52,61 @@ type ClusterRelocationReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	relocation := &rhsysenggithubiov1beta1.ClusterRelocation{}
+
+	err := r.Get(ctx, req.NamespacedName, relocation)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			logger.Info("ClusterRelocation resource not found. Ignoring since object must be deleted")
+			return ctrl.Result{}, nil
+		}
+		logger.Error(err, "Failed to get ClusterRelocation")
+		return ctrl.Result{}, err
+	}
+	defer r.updateStatus(ctx, relocation, logger)
+
+	err = validateCR(relocation)
+	if err != nil {
+		logger.Error(err, "Could not validate ClusterRelocation")
+		return ctrl.Result{}, nil
+	} else {
+		logger.Info("validation succeeded")
+	}
 
 	return ctrl.Result{}, nil
+}
+
+func validateCR(relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
+	if relocation.Name != "cluster" {
+		err := fmt.Errorf("invalid name: %s. CR name must be: cluster", relocation.Name)
+		readyCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ValidationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeReady,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, readyCondition)
+		return err
+	}
+
+	readyCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ValidationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypeReady,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, readyCondition)
+	return nil
+}
+
+func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) {
+	err := r.Status().Update(ctx, relocation)
+	if err != nil {
+		logger.Error(err, "Failed to update Status")
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.

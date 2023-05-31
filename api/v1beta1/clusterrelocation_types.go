@@ -119,3 +119,17 @@ type RegistryCert struct {
 	// Certificate is the certificate for the trusted certificate authority associated with the registry.
 	Certificate string `json:"certificate"`
 }
+
+const (
+	ConditionTypeReady string = "Ready"
+)
+
+const (
+	// ValidationSucceededReason represents the fact that the validation of
+	// the resource has succeeded.
+	ValidationSucceededReason string = "ValidationSucceeded"
+
+	// ValidationFailedReason represents the fact that the validation of
+	// the resource has failed.
+	ValidationFailedReason string = "ValidationFailed"
+)
