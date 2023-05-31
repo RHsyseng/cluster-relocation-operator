@@ -57,19 +57,16 @@ func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
 func CopySecret(ctx context.Context, client client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme,
 	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string) (controllerutil.OperationResult, error) {
 	origSecret := &corev1.Secret{}
-	err := client.Get(ctx, types.NamespacedName{Name: origSecretName, Namespace: origSecretNamespace}, origSecret)
-	if err != nil {
+	if err := client.Get(ctx, types.NamespacedName{Name: origSecretName, Namespace: origSecretNamespace}, origSecret); err != nil {
 		return controllerutil.OperationResultNone, err
 	}
 
 	// We set an owner reference on the user provided certificate
-	// so that if it ever changes, it will trigger a Reconcile
-	err = controllerutil.SetOwnerReference(relocation, origSecret, scheme)
-	if err != nil {
+	// so that if it ever changes, it will trigger a Reconcile (and the changes will be copied)
+	if err := controllerutil.SetOwnerReference(relocation, origSecret, scheme); err != nil {
 		return controllerutil.OperationResultNone, err
 	}
-	err = client.Update(ctx, origSecret)
-	if err != nil {
+	if err := client.Update(ctx, origSecret); err != nil {
 		return controllerutil.OperationResultNone, err
 	}
 
@@ -81,7 +78,8 @@ func CopySecret(ctx context.Context, client client.Client, relocation *rhsysengg
 		}
 
 		secret.Type = corev1.SecretTypeTLS
-		err = controllerutil.SetControllerReference(relocation, secret, scheme)
+		// Set the controller as the owner of the copied secret so that the secret is deleted along with the CR
+		err := controllerutil.SetControllerReference(relocation, secret, scheme)
 		return err
 	})
 

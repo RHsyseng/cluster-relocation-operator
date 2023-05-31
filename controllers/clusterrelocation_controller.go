@@ -59,16 +59,14 @@ const relocationFinalizer = "relocationfinalizer"
 func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	err := configv1.Install(r.Scheme) // Add config.openshift.io/v1 to the scheme
-	if err != nil {
+	if err := configv1.Install(r.Scheme); err != nil { // Add config.openshift.io/v1 to the scheme
 		logger.Error(err, "Failed to install config.openshift.io/v1")
 		return ctrl.Result{}, err
 	}
 
 	relocation := &rhsysenggithubiov1beta1.ClusterRelocation{}
 
-	err = r.Get(ctx, req.NamespacedName, relocation)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, relocation); err != nil {
 		if errors.IsNotFound(err) {
 			logger.Info("ClusterRelocation resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
@@ -92,10 +90,10 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			// Remove relocationFinalizer. Once all finalizers have been
 			// removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(relocation, relocationFinalizer)
-			err := r.Update(ctx, relocation)
-			if err != nil {
+			if err := r.Update(ctx, relocation); err != nil {
 				return ctrl.Result{}, err
 			}
+			logger.Info("Finalizer removed")
 		}
 		return ctrl.Result{}, nil
 	}
@@ -103,24 +101,25 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	// Add finalizer for this CR
 	if !controllerutil.ContainsFinalizer(relocation, relocationFinalizer) {
 		controllerutil.AddFinalizer(relocation, relocationFinalizer)
-		err = r.Update(ctx, relocation)
-		if err != nil {
+		if err := r.Update(ctx, relocation); err != nil {
 			return ctrl.Result{}, err
 		}
+		logger.Info("Added finalizer to CR")
 	}
 
 	defer r.updateStatus(ctx, relocation, logger)
 
-	err = validateCR(relocation)
-	if err != nil {
+	// This ensures that the user created a valid CR
+	// before trying to run through the reconciliation
+	if err := validateCR(relocation); err != nil {
 		logger.Error(err, "Could not validate ClusterRelocation")
 		return ctrl.Result{}, nil
 	} else {
 		logger.Info("validation succeeded")
 	}
 
-	err = reconcileApi.Reconcile(r.Client, r.Scheme, ctx, relocation, logger)
-	if err != nil {
+	// Applies a new certificate and domain alias to the API server
+	if err := reconcileApi.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
 		apiCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -143,6 +142,8 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return ctrl.Result{}, nil
 }
 
+// We ensure that the CR is named "cluster"
+// This makes it so that only 1 CR is reconciled per cluster (since the CR is cluster-scoped)
 func validateCR(relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
 	if relocation.Name != "cluster" {
 		err := fmt.Errorf("invalid name: %s. CR name must be: cluster", relocation.Name)
@@ -168,14 +169,14 @@ func validateCR(relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
 }
 
 func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) {
-	err := r.Status().Update(ctx, relocation)
-	if err != nil {
+	if err := r.Status().Update(ctx, relocation); err != nil {
 		logger.Error(err, "Failed to update Status")
 	}
 }
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
-	// Clean up the APIServer object
+	// We modified the APIServer resource, but we don't own it
+	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
 	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
 	op, err := controllerutil.CreateOrPatch(ctx, r.Client, apiServer, func() error {
 		apiServer.Spec.ServingCerts.NamedCertificates = []configv1.APIServerNamedServingCert{}

@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+// APIServer requires the certificate to exist in the openshift-config namespace
 const configNamespace = "openshift-config"
 
 func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
@@ -23,7 +24,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	var origSecretNamespace string
 	if relocation.Spec.ApiCertRef.Name == "" {
 		// If they haven't specified an ApiCertRef, we generate a self-signed certificate for them
-		origSecretName = "api-secret"
+		origSecretName = "generated-api-secret"
 		origSecretNamespace = configNamespace
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
 
@@ -46,6 +47,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 				logger.Info("TLS cert already exists for API")
 			}
 			secret.Type = corev1.SecretTypeTLS
+			// Set the controller as the owner so that the secret is deleted along with the CR
 			err := controllerutil.SetControllerReference(relocation, secret, scheme)
 			return err
 		})
@@ -60,9 +62,11 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		origSecretNamespace = relocation.Spec.ApiCertRef.Namespace
 		logger.Info("Using user provided API certificate", "namespace", origSecretNamespace, "name", origSecretName)
 
+		// The certificate must be in the openshift-config namespace
+		// so if their certificate is in another namespace, we copy it
 		if origSecretNamespace != configNamespace {
-			secretName := "api-secret-copied"
-			// Copy the secret into openshift-config/api-secret
+			secretName := "copied-api-secret"
+			// Copy the secret into the openshift-config namespace
 			op, err := certs.CopySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace, secretName, configNamespace)
 			if err != nil {
 				return err
