@@ -62,7 +62,9 @@ func CopySecret(ctx context.Context, client client.Client, relocation *rhsysengg
 	}
 
 	// We set an owner reference on the user provided certificate
-	// so that if it ever changes, it will trigger a Reconcile (and the changes will be copied)
+	// so that if it ever changes, it will trigger a Reconcile (and the changes will be copied).
+	// We don't use SetControllerReference because an object can only have 1 controller owner
+	// and the secret may be owned by another controller (cert-manager for example)
 	if err := controllerutil.SetOwnerReference(relocation, origSecret, scheme); err != nil {
 		return controllerutil.OperationResultNone, err
 	}
