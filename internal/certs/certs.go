@@ -61,8 +61,19 @@ func CopySecret(ctx context.Context, client client.Client, relocation *rhsysengg
 	if err != nil {
 		return controllerutil.OperationResultNone, err
 	}
-	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: destSecretName, Namespace: destSecretNamespace}}
 
+	// We set an owner reference on the user provided certificate
+	// so that if it ever changes, it will trigger a Reconcile
+	err = controllerutil.SetOwnerReference(relocation, origSecret, scheme)
+	if err != nil {
+		return controllerutil.OperationResultNone, err
+	}
+	err = client.Update(ctx, origSecret)
+	if err != nil {
+		return controllerutil.OperationResultNone, err
+	}
+
+	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: destSecretName, Namespace: destSecretNamespace}}
 	op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
 		secret.Data = map[string][]byte{
 			corev1.TLSCertKey:       origSecret.Data[corev1.TLSCertKey],
@@ -73,5 +84,6 @@ func CopySecret(ctx context.Context, client client.Client, relocation *rhsysengg
 		err = controllerutil.SetControllerReference(relocation, secret, scheme)
 		return err
 	})
+
 	return op, err
 }
