@@ -198,9 +198,9 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 func (r *ClusterRelocationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&rhsysenggithubiov1beta1.ClusterRelocation{}).
-		Owns(&corev1.Secret{}).
 		// for user provided certificates, we set a non-controller ownership in order to watch for changes
-		// Owns() only watches for IsController:true ownership, so we need to add this as well
+		// Owns() only watches for 'IsController: true' ownership, so we need to watch Secrets this way
+		// 'IsController: false' watches for all types of ownership (including controller ownership)
 		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{OwnerType: &rhsysenggithubiov1beta1.ClusterRelocation{}, IsController: false}).
 		Complete(r)
 }
