@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
-	reconcile_api "github.com/RHsyseng/cluster-relocation-operator/internal/api"
+	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -119,7 +119,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		logger.Info("validation succeeded")
 	}
 
-	err = reconcile_api.Reconcile(r.Client, r.Scheme, ctx, relocation, logger)
+	err = reconcileApi.Reconcile(r.Client, r.Scheme, ctx, relocation, logger)
 	if err != nil {
 		apiCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
