@@ -16,16 +16,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-const secretName = "api-secret"
-const secretNamespace = "openshift-config"
+const configNamespace = "openshift-config"
 
 func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	var origSecretName string
 	var origSecretNamespace string
 	if relocation.Spec.ApiCertRef.Name == "" {
 		// If they haven't specified an ApiCertRef, we generate a self-signed certificate for them
-		origSecretName = secretName
-		origSecretNamespace = secretNamespace
+		origSecretName = "api-secret"
+		origSecretNamespace = configNamespace
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
 
 		op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
@@ -60,18 +59,19 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		origSecretName = relocation.Spec.ApiCertRef.Name
 		origSecretNamespace = relocation.Spec.ApiCertRef.Namespace
 		logger.Info("Using user provided API certificate", "namespace", origSecretNamespace, "name", origSecretName)
-	}
 
-	if origSecretNamespace != secretNamespace {
-		// Copy the secret into openshift-config/api-secret
-		op, err := certs.CopySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace, secretName, secretNamespace)
-		if err != nil {
-			return err
+		if origSecretNamespace != configNamespace {
+			secretName := "api-secret-copied"
+			// Copy the secret into openshift-config/api-secret
+			op, err := certs.CopySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace, secretName, configNamespace)
+			if err != nil {
+				return err
+			}
+			if op != controllerutil.OperationResultNone {
+				logger.Info("User provided cert copied to openshift-config", "OperationResult", op)
+			}
+			origSecretName = secretName
 		}
-		if op != controllerutil.OperationResultNone {
-			logger.Info("User provided cert copied to openshift-config", "OperationResult", op)
-		}
-		origSecretName = secretName
 	}
 
 	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
