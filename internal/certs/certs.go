@@ -1,6 +1,7 @@
 package certs
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -9,6 +10,14 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+
+	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
@@ -39,4 +48,26 @@ func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
 	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
 
 	return certificatePEM, privateKeyPEM, nil
+}
+
+func CopySecret(ctx context.Context, client client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme,
+	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string) (controllerutil.OperationResult, error) {
+	origSecret := &corev1.Secret{}
+	err := client.Get(ctx, types.NamespacedName{Name: origSecretName, Namespace: origSecretNamespace}, origSecret)
+	if err != nil {
+		return controllerutil.OperationResultNone, err
+	}
+	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: destSecretName, Namespace: destSecretNamespace}}
+
+	op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
+		secret.Data = map[string][]byte{
+			corev1.TLSCertKey:       origSecret.Data[corev1.TLSCertKey],
+			corev1.TLSPrivateKeyKey: origSecret.Data[corev1.TLSPrivateKeyKey],
+		}
+
+		secret.Type = corev1.SecretTypeTLS
+		err = controllerutil.SetControllerReference(relocation, secret, scheme)
+		return err
+	})
+	return op, err
 }

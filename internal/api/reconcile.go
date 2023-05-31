@@ -12,7 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -65,7 +64,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 
 	if origSecretNamespace != secretNamespace {
 		// Copy the secret into openshift-config/api-secret
-		op, err := copySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace)
+		op, err := certs.CopySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace, secretName, secretNamespace)
 		if err != nil {
 			return err
 		}
@@ -92,25 +91,4 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		logger.Info("APIServer modified", "OperationResult", op)
 	}
 	return nil
-}
-
-func copySecret(ctx context.Context, client client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme, origSecretName string, origSecretNamespace string) (controllerutil.OperationResult, error) {
-	origSecret := &corev1.Secret{}
-	err := client.Get(ctx, types.NamespacedName{Name: origSecretName, Namespace: origSecretNamespace}, origSecret)
-	if err != nil {
-		return controllerutil.OperationResultNone, err
-	}
-	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: secretName, Namespace: secretNamespace}}
-
-	op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
-		secret.Data = map[string][]byte{
-			corev1.TLSCertKey:       origSecret.Data[corev1.TLSCertKey],
-			corev1.TLSPrivateKeyKey: origSecret.Data[corev1.TLSPrivateKeyKey],
-		}
-
-		secret.Type = corev1.SecretTypeTLS
-		err = controllerutil.SetControllerReference(relocation, secret, scheme)
-		return err
-	})
-	return op, err
 }
