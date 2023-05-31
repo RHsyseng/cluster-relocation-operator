@@ -28,6 +28,8 @@ import (
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	registryCert "github.com/RHsyseng/cluster-relocation-operator/internal/registryCert"
 	reconcileSsh "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
+	reconcileIngress "github.com/RHsyseng/cluster-relocation-operator/internal/ingress"
+
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
@@ -290,6 +292,18 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, dnsCondition)
+	err := reconcileIngress.Reconcile(r.Client, r.Scheme, ctx, relocation, logger)
+	if err != nil {
+		fmt.Printf("Error while patch ingress controller")
+		ingressCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeApi,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
