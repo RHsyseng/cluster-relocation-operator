@@ -222,17 +222,16 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 			return err
 		}
 	} else {
-		// copy the backup pull secret into the original, then delete the backup
-		op, err := secrets.CopySecret(ctx, r.Client, relocation, r.Scheme, rhsysenggithubiov1beta1.BackupPullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace)
+		// copy the backup pull secret into the cluster-wide pull secret
+		// the backup should already be owned by the controller
+		// we should not own the cluster-wide pull secret
+		copySettings := secrets.SecretCopySettings{}
+		op, err := secrets.CopySecret(ctx, r.Client, relocation, r.Scheme, rhsysenggithubiov1beta1.BackupPullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 		if err != nil {
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
 			logger.Info("Restored original pull secret", "OperationResult", op)
-		}
-		err = r.Client.Delete(ctx, backupPullSecret)
-		if err != nil {
-			return err
 		}
 	}
 	logger.Info("Successfully finalized ClusterRelocation")

@@ -19,7 +19,14 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	if err := client.Get(ctx, types.NamespacedName{Name: rhsysenggithubiov1beta1.BackupPullSecretName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, backupPullSecret); err != nil {
 		if errors.IsNotFound(err) {
 			// if we haven't yet made a backup of the original pull secret, make one now
-			op, err := secrets.CopySecret(ctx, client, relocation, scheme, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, rhsysenggithubiov1beta1.BackupPullSecretName, rhsysenggithubiov1beta1.ConfigNamespace)
+			// we should own the backup secret, but not the original pull-secret
+			copySettings := secrets.SecretCopySettings{
+				OwnOriginal:                  false,
+				OriginalOwnedByController:    false,
+				OwnDestination:               true,
+				DestinationOwnedByController: true,
+			}
+			op, err := secrets.CopySecret(ctx, client, relocation, scheme, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, rhsysenggithubiov1beta1.BackupPullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 			if err != nil {
 				return err
 			}
@@ -34,7 +41,15 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		// if they don't specify a new pull secret, nothing to do
 		return nil
 	}
-	op, err := secrets.CopySecret(ctx, client, relocation, scheme, relocation.Spec.PullSecretRef.Name, relocation.Spec.PullSecretRef.Namespace, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace)
+	// copy their secret to the cluster-wide pull secret
+	// we own their secret (non-controller ownership) in order to watch it, but we should not own the cluster-wide pull secret
+	copySettings := secrets.SecretCopySettings{
+		OwnOriginal:                  true,
+		OriginalOwnedByController:    false,
+		OwnDestination:               false,
+		DestinationOwnedByController: false,
+	}
+	op, err := secrets.CopySecret(ctx, client, relocation, scheme, relocation.Spec.PullSecretRef.Name, relocation.Spec.PullSecretRef.Namespace, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 	if err != nil {
 		return err
 	}

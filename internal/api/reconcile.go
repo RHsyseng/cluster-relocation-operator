@@ -64,7 +64,16 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		if origSecretNamespace != rhsysenggithubiov1beta1.ConfigNamespace {
 			secretName := "copied-api-secret"
 			// Copy the secret into the openshift-config namespace
-			op, err := secrets.CopySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace)
+			// the original may be owned by another controller (cert-manager for example)
+			// we add non-controller ownership to this secret, in order to watch it.
+			// our controller should own the destination secret
+			copySettings := secrets.SecretCopySettings{
+				OwnOriginal:                  true,
+				OriginalOwnedByController:    false,
+				OwnDestination:               true,
+				DestinationOwnedByController: true,
+			}
+			op, err := secrets.CopySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 			if err != nil {
 				return err
 			}

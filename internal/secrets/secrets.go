@@ -20,6 +20,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+type SecretCopySettings struct {
+	OwnOriginal                  bool
+	OriginalOwnedByController    bool
+	OwnDestination               bool
+	DestinationOwnedByController bool
+}
+
 func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
 	// Generate a private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -51,30 +58,41 @@ func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
 }
 
 func CopySecret(ctx context.Context, client client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme,
-	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string) (controllerutil.OperationResult, error) {
+	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string, settings SecretCopySettings) (controllerutil.OperationResult, error) {
 	origSecret := &corev1.Secret{}
 	if err := client.Get(ctx, types.NamespacedName{Name: origSecretName, Namespace: origSecretNamespace}, origSecret); err != nil {
 		return controllerutil.OperationResultNone, err
 	}
 
-	// We set an owner reference on the user provided secret
-	// so that if it ever changes, it will trigger a Reconcile (and the changes will be copied).
-	// We don't use SetControllerReference because an object can only have 1 controller owner
-	// and the secret may be owned by another controller (cert-manager for example)
-	if err := controllerutil.SetOwnerReference(relocation, origSecret, scheme); err != nil {
-		return controllerutil.OperationResultNone, err
-	}
-	if err := client.Update(ctx, origSecret); err != nil {
-		return controllerutil.OperationResultNone, err
+	if settings.OwnOriginal {
+		if settings.OriginalOwnedByController {
+			if err := controllerutil.SetControllerReference(relocation, origSecret, scheme); err != nil {
+				return controllerutil.OperationResultNone, err
+			}
+		} else {
+			if err := controllerutil.SetOwnerReference(relocation, origSecret, scheme); err != nil {
+				return controllerutil.OperationResultNone, err
+			}
+		}
+		if err := client.Update(ctx, origSecret); err != nil {
+			return controllerutil.OperationResultNone, err
+		}
 	}
 
 	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: destSecretName, Namespace: destSecretNamespace}}
 	op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
 		secret.Data = origSecret.Data
 		secret.Type = origSecret.Type
-		// Set the controller as the owner of the copied secret so that the secret is deleted along with the CR
-		err := controllerutil.SetControllerReference(relocation, secret, scheme)
-		return err
+		if settings.OwnDestination {
+			var err error
+			if settings.DestinationOwnedByController {
+				err = controllerutil.SetControllerReference(relocation, secret, scheme)
+			} else {
+				err = controllerutil.SetOwnerReference(relocation, secret, scheme)
+			}
+			return err
+		}
+		return nil
 	})
 
 	return op, err
