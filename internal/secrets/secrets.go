@@ -50,10 +50,6 @@ func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
 	return certificatePEM, privateKeyPEM, nil
 }
 
-// We allow the user to specify a certificate for the API and Ingress in any namespace
-// However, APIServer expects the certificate to exist in openshift-config
-// and Ingress expects 2 copies of the certificate: one in openshift-config and another in openshift-ingress.
-// This function copies their certificate into the required locations
 func CopySecret(ctx context.Context, client client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme,
 	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string) (controllerutil.OperationResult, error) {
 	origSecret := &corev1.Secret{}
@@ -61,7 +57,7 @@ func CopySecret(ctx context.Context, client client.Client, relocation *rhsysengg
 		return controllerutil.OperationResultNone, err
 	}
 
-	// We set an owner reference on the user provided certificate
+	// We set an owner reference on the user provided secret
 	// so that if it ever changes, it will trigger a Reconcile (and the changes will be copied).
 	// We don't use SetControllerReference because an object can only have 1 controller owner
 	// and the secret may be owned by another controller (cert-manager for example)
