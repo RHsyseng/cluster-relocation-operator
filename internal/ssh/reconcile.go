@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
@@ -13,6 +14,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+type MachineConfigUsersData struct {
+	Name              string   `json:"name"`
+	SshAuthorizedKeys []string `json:"sshAuthorizedKeys"`
+}
+
+type MachineConfigPasswdData struct {
+	Users []MachineConfigUsersData `json:"users"`
+}
+
+type MachineConfigData struct {
+	Ignition map[string]string       `json:"ignition"`
+	Passwd   MachineConfigPasswdData `json:"passwd"`
+}
+
 func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if len(relocation.Spec.SSHKeys) == 0 {
 		// if they don't specify new ssh keys, nothing to do
@@ -23,9 +38,24 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("core-ssh-key-%s", v)}}
 		op, err := controllerutil.CreateOrUpdate(ctx, client, machineConfig, func() error {
 			machineConfig.Labels["machineconfiguration.openshift.io/role"] = v
-			// TODO: fill in spec
+			configData := MachineConfigData{
+				Ignition: map[string]string{"version": "3.2.0"},
+				Passwd: MachineConfigPasswdData{
+					Users: []MachineConfigUsersData{
+						{
+							Name:              "core",
+							SshAuthorizedKeys: relocation.Spec.SSHKeys,
+						},
+					},
+				},
+			}
+			bytes, err := json.Marshal(configData)
+			if err != nil {
+				return err
+			}
+			machineConfig.Spec.Config.Raw = bytes
 			// Set the controller as the owner so that the MachineConfig is deleted along with the CR
-			err := controllerutil.SetControllerReference(relocation, machineConfig, scheme)
+			err = controllerutil.SetControllerReference(relocation, machineConfig, scheme)
 			return err
 		})
 		if err != nil {
