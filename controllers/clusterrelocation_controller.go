@@ -218,6 +218,7 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 	// If we modified the original pull secret, we need to restore it
 	backupPullSecret := &corev1.Secret{}
 	if err := r.Client.Get(ctx, types.NamespacedName{Name: rhsysenggithubiov1beta1.BackupPullSecretName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, backupPullSecret); err != nil {
+		// if there is no backup, that means we didn't modify the pull-secret. Nothing for us to do
 		if !errors.IsNotFound(err) {
 			return err
 		}

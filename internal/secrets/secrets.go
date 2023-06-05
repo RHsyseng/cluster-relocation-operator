@@ -57,6 +57,7 @@ func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
 	return certificatePEM, privateKeyPEM, nil
 }
 
+// copies a secret from one location to another
 func CopySecret(ctx context.Context, client client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme,
 	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string, settings SecretCopySettings) (controllerutil.OperationResult, error) {
 	origSecret := &corev1.Secret{}
