@@ -144,7 +144,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
 	}
 
-	// Applied a new cluster-wide pull secret
+	// Apply a new cluster-wide pull secret
 	if err := reconcilePullSecret.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
 		pullSecretCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
