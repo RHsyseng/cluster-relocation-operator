@@ -124,6 +124,7 @@ const (
 	ConditionTypeReady      string = "Ready"
 	ConditionTypeApi        string = "APIReconciled"
 	ConditionTypePullSecret string = "PullSecretReconciled"
+	ConditionTypeSsh   string = "SSHKeyReconciled"
 )
 
 const (
