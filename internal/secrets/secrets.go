@@ -74,12 +74,8 @@ func CopySecret(ctx context.Context, client client.Client, relocation *rhsysengg
 
 	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: destSecretName, Namespace: destSecretNamespace}}
 	op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
-		secret.Data = map[string][]byte{
-			corev1.TLSCertKey:       origSecret.Data[corev1.TLSCertKey],
-			corev1.TLSPrivateKeyKey: origSecret.Data[corev1.TLSPrivateKeyKey],
-		}
-
-		secret.Type = corev1.SecretTypeTLS
+		secret.Data = origSecret.Data
+		secret.Type = origSecret.Type
 		// Set the controller as the owner of the copied secret so that the secret is deleted along with the CR
 		err := controllerutil.SetControllerReference(relocation, secret, scheme)
 		return err

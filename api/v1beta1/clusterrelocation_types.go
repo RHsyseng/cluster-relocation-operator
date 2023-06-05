@@ -121,8 +121,15 @@ type RegistryCert struct {
 }
 
 const (
-	ConditionTypeReady string = "Ready"
-	ConditionTypeApi   string = "APIReconciled"
+	ConditionTypeReady      string = "Ready"
+	ConditionTypeApi        string = "APIReconciled"
+	ConditionTypePullSecret string = "PullSecretReconciled"
+)
+
+const (
+	PullSecretName       string = "pull-secret"
+	BackupPullSecretName string = "backup-pull-secret"
+	ConfigNamespace      string = "openshift-config"
 )
 
 const (

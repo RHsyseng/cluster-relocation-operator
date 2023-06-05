@@ -22,6 +22,8 @@ import (
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
+	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
+	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +31,7 @@ import (
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -141,6 +144,27 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
 	}
 
+	// Applied a new cluster-wide pull secret
+	if err := reconcilePullSecret.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		pullSecretCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypePullSecret,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
+		return ctrl.Result{}, err
+	} else {
+		pullSecretCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypePullSecret,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -189,6 +213,27 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 	}
 	if op != controllerutil.OperationResultNone {
 		logger.Info("APIServer reverted to original state", "OperationResult", op)
+	}
+
+	// If we modified the original pull secret, we need to restore it
+	backupPullSecret := &corev1.Secret{}
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: rhsysenggithubiov1beta1.BackupPullSecretName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, backupPullSecret); err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+	} else {
+		// copy the backup pull secret into the original, then delete the backup
+		op, err := secrets.CopySecret(ctx, r.Client, relocation, r.Scheme, rhsysenggithubiov1beta1.BackupPullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace)
+		if err != nil {
+			return err
+		}
+		if op != controllerutil.OperationResultNone {
+			logger.Info("Restored original pull secret", "OperationResult", op)
+		}
+		err = r.Client.Delete(ctx, backupPullSecret)
+		if err != nil {
+			return err
+		}
 	}
 	logger.Info("Successfully finalized ClusterRelocation")
 	return nil
