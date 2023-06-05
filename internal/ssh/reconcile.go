@@ -32,7 +32,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
-			logger.Info("Self-signed TLS cert modified", "OperationResult", op)
+			logger.Info("Updated SSH keys for core user", "MachineConfigPool", v, "OperationResult", op)
 		}
 	}
 
