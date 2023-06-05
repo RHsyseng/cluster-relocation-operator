@@ -15,6 +15,11 @@ import (
 )
 
 func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+	if relocation.Spec.PullSecretRef.Name == "" {
+		// if they don't specify a new pull secret, nothing to do
+		return nil
+	}
+
 	backupPullSecret := &corev1.Secret{}
 	if err := client.Get(ctx, types.NamespacedName{Name: rhsysenggithubiov1beta1.BackupPullSecretName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, backupPullSecret); err != nil {
 		if errors.IsNotFound(err) {
@@ -37,10 +42,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 			return err
 		}
 	}
-	if relocation.Spec.PullSecretRef.Name == "" {
-		// if they don't specify a new pull secret, nothing to do
-		return nil
-	}
+
 	// copy their secret to the cluster-wide pull secret
 	// we own their secret (non-controller ownership) in order to watch it, but we should not own the cluster-wide pull secret
 	copySettings := secrets.SecretCopySettings{
