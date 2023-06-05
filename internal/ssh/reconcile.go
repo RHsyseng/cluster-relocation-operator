@@ -24,7 +24,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		op, err := controllerutil.CreateOrUpdate(ctx, client, machineConfig, func() error {
 			machineConfig.Labels["machineconfiguration.openshift.io/role"] = v
 			// TODO: fill in spec
-			// Set the controller as the owner so that the secret is deleted along with the CR
+			// Set the controller as the owner so that the MachineConfig is deleted along with the CR
 			err := controllerutil.SetControllerReference(relocation, machineConfig, scheme)
 			return err
 		})
