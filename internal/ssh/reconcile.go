@@ -69,7 +69,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 }
 
 func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) error {
-	// if they move from relocation.Spec.SSHKeys=<somthing> to relocation.Spec.SSHKeys=<empty>, we need to delete the MachineConfigs
+	// if they move from relocation.Spec.SSHKeys=<something> to relocation.Spec.SSHKeys=<empty>, we need to delete the MachineConfigs
 	for _, v := range []string{"master", "worker"} {
 		machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("core-ssh-key-%s", v)}}
 		if err := client.Delete(ctx, machineConfig); err != nil {
