@@ -52,7 +52,7 @@ spec:
                 x-kubernetes-map-type: atomic
               catalogSources:
                 description: CatalogSources define new CatalogSources to install on
-                  the cluster. If defined, existing CatalogSources will be removed.
+                  the cluster.
                 items:
                   properties:
                     image:
@@ -72,20 +72,28 @@ spec:
                 type: string
               imageDigestSources:
                 description: ImageDigestSources will be converted into ImageContentSourcePolicys
-                  on the cluster. If defined, existing ImageContentSourcePolicys will
-                  be removed.
+                  on the cluster.
                 items:
-                  description: ImageDigestSource defines a list of sources/repositories
-                    that can be used to pull content.
+                  description: 'RepositoryDigestMirrors holds cluster-wide information
+                    about how to handle mirros in the registries config. Note: the
+                    mirrors only work when pulling the images that are referenced
+                    by their digests.'
                   properties:
                     mirrors:
-                      description: Mirrors is one or more repositories that may also
-                        contain the same images.
+                      description: mirrors is one or more repositories that may also
+                        contain the same images. The order of mirrors in this list
+                        is treated as the user's desired priority, while source is
+                        by default considered lower priority than all mirrors. Other
+                        cluster configuration, including (but not limited to) other
+                        repositoryDigestMirrors objects, may impact the exact order
+                        mirrors are contacted in, or some mirrors may be contacted
+                        in parallel, so this should be considered a preference rather
+                        than a guarantee of ordering.
                       items:
                         type: string
                       type: array
                     source:
-                      description: Source is the repository that users refer to, e.g.
+                      description: source is the repository that users refer to, e.g.
                         in image pull specifications.
                       type: string
                   required:
