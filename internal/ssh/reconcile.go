@@ -55,8 +55,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 			}
 			machineConfig.Spec.Config.Raw = bytes
 			// Set the controller as the owner so that the MachineConfig is deleted along with the CR
-			err = controllerutil.SetControllerReference(relocation, machineConfig, scheme)
-			return err
+			return controllerutil.SetControllerReference(relocation, machineConfig, scheme)
 		})
 		if err != nil {
 			return err
