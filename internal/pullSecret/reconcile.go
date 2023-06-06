@@ -82,9 +82,7 @@ func Cleanup(client client.Client, scheme *runtime.Scheme, ctx context.Context, 
 			logger.Info("Restored original pull secret", "OperationResult", op)
 		}
 		if err := client.Delete(ctx, backupPullSecret); err != nil {
-			if !errors.IsNotFound(err) {
-				return err
-			}
+			return err
 		}
 	}
 	return nil
