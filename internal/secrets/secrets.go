@@ -85,13 +85,15 @@ func CopySecret(ctx context.Context, client client.Client, relocation *rhsysengg
 		secret.Data = origSecret.Data
 		secret.Type = origSecret.Type
 		if settings.OwnDestination {
-			var err error
 			if settings.DestinationOwnedByController {
-				err = controllerutil.SetControllerReference(relocation, secret, scheme)
+				if err := controllerutil.SetControllerReference(relocation, secret, scheme); err != nil {
+					return err
+				}
 			} else {
-				err = controllerutil.SetOwnerReference(relocation, secret, scheme)
+				if err := controllerutil.SetOwnerReference(relocation, secret, scheme); err != nil {
+					return err
+				}
 			}
-			return err
 		}
 		return nil
 	})
