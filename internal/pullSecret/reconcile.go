@@ -86,6 +86,8 @@ func Cleanup(client client.Client, scheme *runtime.Scheme, ctx context.Context, 
 		// we delete the backup so that if they ever move back to PullSecretRef=<something>, a fresh backup is taken
 		if err := client.Delete(ctx, backupPullSecret); err != nil {
 			return err
+		} else {
+			logger.Info("Deleted backup pull secret")
 		}
 	}
 	return nil
