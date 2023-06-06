@@ -60,3 +60,27 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	}
 	return nil
 }
+
+func Cleanup(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+	// If we modified the original pull secret, we need to restore it
+	backupPullSecret := &corev1.Secret{}
+	if err := client.Get(ctx, types.NamespacedName{Name: rhsysenggithubiov1beta1.BackupPullSecretName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, backupPullSecret); err != nil {
+		// if there is no backup, that means we didn't modify the pull-secret. Nothing for us to do
+		if !errors.IsNotFound(err) {
+			return err
+		}
+	} else {
+		// copy the backup pull secret into the cluster-wide pull secret
+		// the backup should already be owned by the controller
+		// we should not own the cluster-wide pull secret
+		copySettings := secrets.SecretCopySettings{}
+		op, err := secrets.CopySecret(ctx, client, relocation, scheme, rhsysenggithubiov1beta1.BackupPullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
+		if err != nil {
+			return err
+		}
+		if op != controllerutil.OperationResultNone {
+			logger.Info("Restored original pull secret", "OperationResult", op)
+		}
+	}
+	return nil
+}

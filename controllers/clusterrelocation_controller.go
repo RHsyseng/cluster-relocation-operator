@@ -23,7 +23,6 @@ import (
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
-	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,7 +30,6 @@ import (
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -201,40 +199,16 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 }
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
-	// We modified the APIServer resource, but we don't own it
-	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
-	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
-	op, err := controllerutil.CreateOrPatch(ctx, r.Client, apiServer, func() error {
-		apiServer.Spec.ServingCerts.NamedCertificates = []configv1.APIServerNamedServingCert{}
-		return nil
-	})
+	err := reconcileApi.Cleanup(r.Client, ctx, logger)
 	if err != nil {
 		return err
 	}
-	if op != controllerutil.OperationResultNone {
-		logger.Info("APIServer reverted to original state", "OperationResult", op)
+
+	err = reconcilePullSecret.Cleanup(r.Client, r.Scheme, ctx, relocation, logger)
+	if err != nil {
+		return err
 	}
 
-	// If we modified the original pull secret, we need to restore it
-	backupPullSecret := &corev1.Secret{}
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: rhsysenggithubiov1beta1.BackupPullSecretName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, backupPullSecret); err != nil {
-		// if there is no backup, that means we didn't modify the pull-secret. Nothing for us to do
-		if !errors.IsNotFound(err) {
-			return err
-		}
-	} else {
-		// copy the backup pull secret into the cluster-wide pull secret
-		// the backup should already be owned by the controller
-		// we should not own the cluster-wide pull secret
-		copySettings := secrets.SecretCopySettings{}
-		op, err := secrets.CopySecret(ctx, r.Client, relocation, r.Scheme, rhsysenggithubiov1beta1.BackupPullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, rhsysenggithubiov1beta1.PullSecretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
-		if err != nil {
-			return err
-		}
-		if op != controllerutil.OperationResultNone {
-			logger.Info("Restored original pull secret", "OperationResult", op)
-		}
-	}
 	logger.Info("Successfully finalized ClusterRelocation")
 	return nil
 }

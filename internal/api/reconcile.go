@@ -102,3 +102,20 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	}
 	return nil
 }
+
+func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) error {
+	// We modified the APIServer resource, but we don't own it
+	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
+	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
+	op, err := controllerutil.CreateOrPatch(ctx, client, apiServer, func() error {
+		apiServer.Spec.ServingCerts.NamedCertificates = []configv1.APIServerNamedServingCert{}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if op != controllerutil.OperationResultNone {
+		logger.Info("APIServer reverted to original state", "OperationResult", op)
+	}
+	return nil
+}
