@@ -78,7 +78,7 @@ func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) erro
 				return err
 			}
 		} else {
-			logger.Info("SSH key MachineConfig delete", "MachineConfig", machineConfig.ObjectMeta.Name)
+			logger.Info("SSH key MachineConfig deleted", "MachineConfig", machineConfig.ObjectMeta.Name)
 		}
 	}
 	return nil
