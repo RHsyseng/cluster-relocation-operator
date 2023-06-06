@@ -45,8 +45,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 			}
 			secret.Type = corev1.SecretTypeTLS
 			// Set the controller as the owner so that the secret is deleted along with the CR
-			err := controllerutil.SetControllerReference(relocation, secret, scheme)
-			return err
+			return controllerutil.SetControllerReference(relocation, secret, scheme)
 		})
 		if err != nil {
 			return err
