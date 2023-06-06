@@ -16,8 +16,8 @@ import (
 
 func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if relocation.Spec.PullSecretRef.Name == "" {
-		// if they don't specify a new pull secret, nothing to do
-		return nil
+		// run Cleanup function in case they are moving from PullSecretRef=<something> to PullSecretRef=<empty>
+		return Cleanup(client, scheme, ctx, relocation, logger)
 	}
 
 	backupPullSecret := &corev1.Secret{}
@@ -80,6 +80,11 @@ func Cleanup(client client.Client, scheme *runtime.Scheme, ctx context.Context, 
 		}
 		if op != controllerutil.OperationResultNone {
 			logger.Info("Restored original pull secret", "OperationResult", op)
+		}
+		if err := client.Delete(ctx, backupPullSecret); err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
 		}
 	}
 	return nil
