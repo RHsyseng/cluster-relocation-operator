@@ -78,6 +78,15 @@ jobs:
         run: |
           make bundle-push
 
+      - name: build catalog
+        run: |
+          make catalog-build
+
+      - name: push catalog
+        if: ${{ github.event_name != 'pull_request' }}
+        run: |
+          make catalog-push
+
       - name: Save bundle
         uses: actions/upload-artifact@v3
         with:
