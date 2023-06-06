@@ -8,6 +8,7 @@ import (
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	"github.com/go-logr/logr"
 	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,8 +31,7 @@ type MachineConfigData struct {
 
 func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if len(relocation.Spec.SSHKeys) == 0 {
-		// if they don't specify new ssh keys, nothing to do
-		return nil
+		return Cleanup(client, ctx, logger)
 	}
 
 	for _, v := range []string{"master", "worker"} {
@@ -66,5 +66,20 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		}
 	}
 
+	return nil
+}
+
+func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) error {
+	// if they move from relocation.Spec.SSHKeys=<somthing> to relocation.Spec.SSHKeys=<empty>, we need to delete the MachineConfigs
+	for _, v := range []string{"master", "worker"} {
+		machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("core-ssh-key-%s", v)}}
+		if err := client.Delete(ctx, machineConfig); err != nil {
+			if !errors.IsNotFound(err) {
+				return err
+			}
+		} else {
+			logger.Info("SSH key MachineConfig delete", "MachineConfig", machineConfig.ObjectMeta.Name)
+		}
+	}
 	return nil
 }
