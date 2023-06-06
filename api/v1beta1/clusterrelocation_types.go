@@ -53,7 +53,7 @@ type ClusterRelocationSpec struct {
 	RegistryCert RegistryCert `json:"registryCert,omitempty"`
 
 	// SSHKeys defines a list of authorized SSH keys for the 'core' user.
-	// If defined, it will replace the existing authorized SSH key(s).
+	// If defined, it will be appended to the existing authorized SSH key(s).
 	SSHKeys []string `json:"sshKeys,omitempty"`
 }
 

@@ -142,7 +142,7 @@ spec:
                 type: object
               sshKeys:
                 description: SSHKeys defines a list of authorized SSH keys for the
-                  'core' user. If defined, it will replace the existing authorized
+                  'core' user. If defined, it will be appended to the existing authorized
                   SSH key(s).
                 items:
                   type: string
