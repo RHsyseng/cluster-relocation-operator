@@ -81,6 +81,8 @@ func Cleanup(client client.Client, scheme *runtime.Scheme, ctx context.Context, 
 		if op != controllerutil.OperationResultNone {
 			logger.Info("Restored original pull secret", "OperationResult", op)
 		}
+		// when run as part of the finalizer, deleting the backup pull-secret isn't required (it will be deleted automatically)
+		// however, we also run this if the user moves from PullSecretRef=<something> to PullSecretRef=<empty>
 		if err := client.Delete(ctx, backupPullSecret); err != nil {
 			return err
 		}
