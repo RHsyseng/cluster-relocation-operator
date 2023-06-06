@@ -83,6 +83,7 @@ func Cleanup(client client.Client, scheme *runtime.Scheme, ctx context.Context, 
 		}
 		// when run as part of the finalizer, deleting the backup pull-secret isn't required (it will be deleted automatically)
 		// however, we also run this if the user moves from PullSecretRef=<something> to PullSecretRef=<empty>
+		// we delete the backup so that if they ever move back to PullSecretRef=<something>, a fresh backup is taken
 		if err := client.Delete(ctx, backupPullSecret); err != nil {
 			return err
 		}
