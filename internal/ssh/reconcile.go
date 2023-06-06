@@ -37,7 +37,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	for _, v := range []string{"master", "worker"} {
 		machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("core-ssh-key-%s", v)}}
 		op, err := controllerutil.CreateOrUpdate(ctx, client, machineConfig, func() error {
-			machineConfig.Labels["machineconfiguration.openshift.io/role"] = v
+			machineConfig.Labels = map[string]string{"machineconfiguration.openshift.io/role": v}
 			configData := MachineConfigData{
 				Ignition: map[string]string{"version": "3.2.0"},
 				Passwd: MachineConfigPasswdData{
