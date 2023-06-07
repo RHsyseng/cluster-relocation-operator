@@ -23,8 +23,10 @@ import (
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
+	reconcileSsh "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
+	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -64,6 +66,11 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if err := configv1.Install(r.Scheme); err != nil { // Add config.openshift.io/v1 to the scheme
 		logger.Error(err, "Failed to install config.openshift.io/v1")
+		return ctrl.Result{}, err
+	}
+
+	if err := machineconfigurationv1.Install(r.Scheme); err != nil { // Add machineconfiguration.openshift.io/v1 to the scheme
+		logger.Error(err, "Failed to install machineconfiguration.openshift.io/v1")
 		return ctrl.Result{}, err
 	}
 
@@ -161,6 +168,27 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
+	}
+
+	// Applies a SSH key for the 'core' user
+	if err := reconcileSsh.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		sshCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeSsh,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, sshCondition)
+		return ctrl.Result{}, err
+	} else {
+		sshCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeSsh,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, sshCondition)
 	}
 
 	return ctrl.Result{}, nil

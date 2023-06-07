@@ -5,7 +5,8 @@ go 1.19
 require (
 	github.com/onsi/ginkgo/v2 v2.9.5
 	github.com/onsi/gomega v1.27.7
-	github.com/openshift/api v0.0.0-20220124143425-d74727069f6f
+	github.com/openshift/api v0.0.0-20230221095031-69130006bb23
+	github.com/openshift/machine-config-operator v0.0.1-0.20230526005055-5843b7a4b27f
 	k8s.io/apimachinery v0.26.5
 	k8s.io/client-go v0.26.5
 	sigs.k8s.io/controller-runtime v0.14.6
@@ -49,7 +50,7 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
