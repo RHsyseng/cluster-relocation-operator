@@ -57,8 +57,8 @@ func createICSP(client client.Client, scheme *runtime.Scheme, ctx context.Contex
 		icsp.Spec.RepositoryDigestMirrors = []operatorv1alpha1.RepositoryDigestMirrors{}
 		for _, v := range relocation.Spec.ImageDigestMirrors {
 			mirrors := []string{}
-			for _, v := range v.Mirrors {
-				mirrors = append(mirrors, string(v))
+			for _, w := range v.Mirrors {
+				mirrors = append(mirrors, string(w))
 			}
 			item := operatorv1alpha1.RepositoryDigestMirrors{
 				Source:  v.Source,
