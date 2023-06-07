@@ -22,12 +22,14 @@ import (
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
+	reconcileMirror "github.com/RHsyseng/cluster-relocation-operator/internal/mirror"
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	reconcileSsh "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
 	registryCert "github.com/RHsyseng/cluster-relocation-operator/internal/registryCert"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
@@ -72,6 +74,11 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if err := machineconfigurationv1.Install(r.Scheme); err != nil { // Add machineconfiguration.openshift.io/v1 to the scheme
 		logger.Error(err, "Failed to install machineconfiguration.openshift.io/v1")
+		return ctrl.Result{}, err
+	}
+
+	if err := operatorv1alpha1.Install(r.Scheme); err != nil { // Add operator.openshift.io/v1alpha1 to the scheme
+		logger.Error(err, "Failed to install operator.openshift.io/v1alpha1")
 		return ctrl.Result{}, err
 	}
 
@@ -211,6 +218,27 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, registryCertCondition)
+	}
+
+	// Applies new mirror configuration
+	if err := reconcileMirror.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		mirrorCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeMirror,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, mirrorCondition)
+		return ctrl.Result{}, err
+	} else {
+		mirrorCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeMirror,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, mirrorCondition)
 	}
 
 	return ctrl.Result{}, nil

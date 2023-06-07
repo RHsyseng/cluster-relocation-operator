@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -30,15 +31,13 @@ type ClusterRelocationSpec struct {
 	ApiCertRef corev1.SecretReference `json:"apiCertRef,omitempty"`
 
 	// CatalogSources define new CatalogSources to install on the cluster.
-	// If defined, existing CatalogSources will be removed.
 	CatalogSources []CatalogSource `json:"catalogSources,omitempty"`
 
 	// Domain defines the new base domain for the cluster.
 	Domain string `json:"domain"`
 
 	// ImageDigestSources will be converted into ImageContentSourcePolicys on the cluster.
-	// If defined, existing ImageContentSourcePolicys will be removed.
-	ImageDigestSources []ImageDigestSource `json:"imageDigestSources,omitempty"`
+	ImageDigestSources []operatorv1alpha1.RepositoryDigestMirrors `json:"imageDigestSources,omitempty"`
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
 	// If it is omitted, a self-signed certificate will be generated.
@@ -91,16 +90,6 @@ func init() {
 	SchemeBuilder.Register(&ClusterRelocation{}, &ClusterRelocationList{})
 }
 
-// ImageDigestSource defines a list of sources/repositories that can be used to pull content.
-type ImageDigestSource struct {
-	// Source is the repository that users refer to, e.g. in image pull specifications.
-	Source string `json:"source"`
-
-	// Mirrors is one or more repositories that may also contain the same images.
-	// +optional
-	Mirrors []string `json:"mirrors,omitempty"`
-}
-
 type CatalogSource struct {
 	// Name is the name of the CatalogSource.
 	Name string `json:"name"`
@@ -126,6 +115,7 @@ const (
 	ConditionTypePullSecret   string = "PullSecretReconciled"
 	ConditionTypeSsh          string = "SSHKeyReconciled"
 	ConditionTypeRegistryCert string = "RegistryCertReconciled"
+	ConditionTypeMirror       string = "MirrorReconciled"
 )
 
 const (
