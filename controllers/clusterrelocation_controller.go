@@ -26,6 +26,7 @@ import (
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	reconcileSsh "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
 	registryCert "github.com/RHsyseng/cluster-relocation-operator/internal/registryCert"
+	reconcileDns "github.com/RHsyseng/cluster-relocation-operator/internal/dns"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
@@ -239,6 +240,27 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, mirrorCondition)
+	}
+
+	// Adds new internal DNS records
+	if err := reconcileDns.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		dnsCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeDns,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, dnsCondition)
+		return ctrl.Result{}, err
+	} else {
+		dnsCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeDns,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, dnsCondition)
 	}
 
 	return ctrl.Result{}, nil
