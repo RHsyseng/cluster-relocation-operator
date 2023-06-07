@@ -27,6 +27,21 @@ type SecretCopySettings struct {
 	DestinationOwnedByController bool
 }
 
+func GetCertCommonName(TLSCertKey []byte) (string, error) {
+	block, _ := pem.Decode(TLSCertKey)
+	if block == nil {
+		return "", fmt.Errorf("failed to decode certificate")
+	}
+
+	// Parse the certificate
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", err
+	}
+
+	return cert.Subject.CommonName, nil
+}
+
 func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
 	// Generate a private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
