@@ -168,6 +168,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
+	}
 
 	// Applies a SSH key for the 'core' user
 	if err := reconcileSsh.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
