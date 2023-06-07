@@ -31,6 +31,10 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	if semver.Compare(fmt.Sprintf("v%s", clusterVersion.Status.Desired.Version), "v4.13.0") == -1 {
 		return createICSP(client, scheme, ctx, relocation, logger)
 	} else {
+		// In case we are upgrading from 4.12 to 4.13+, remove any old ImageContentSourcePolicy
+		if err := cleanupICSP(client, ctx, logger); err != nil {
+			return err
+		}
 		return createIDMS(client, scheme, ctx, relocation, logger)
 	}
 }
