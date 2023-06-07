@@ -22,6 +22,7 @@ import (
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
+	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -141,6 +142,27 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
 	}
 
+	// Apply a new cluster-wide pull secret
+	if err := reconcilePullSecret.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		pullSecretCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypePullSecret,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
+		return ctrl.Result{}, err
+	} else {
+		pullSecretCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypePullSecret,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -177,19 +199,14 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 }
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
-	// We modified the APIServer resource, but we don't own it
-	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
-	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
-	op, err := controllerutil.CreateOrPatch(ctx, r.Client, apiServer, func() error {
-		apiServer.Spec.ServingCerts.NamedCertificates = []configv1.APIServerNamedServingCert{}
-		return nil
-	})
-	if err != nil {
+	if err := reconcileApi.Cleanup(r.Client, ctx, logger); err != nil {
 		return err
 	}
-	if op != controllerutil.OperationResultNone {
-		logger.Info("APIServer reverted to original state", "OperationResult", op)
+
+	if err := reconcilePullSecret.Cleanup(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		return err
 	}
+
 	logger.Info("Successfully finalized ClusterRelocation")
 	return nil
 }
