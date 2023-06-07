@@ -7,6 +7,7 @@ require (
 	github.com/onsi/gomega v1.27.7
 	github.com/openshift/api v0.0.0-20230221095031-69130006bb23
 	github.com/openshift/machine-config-operator v0.0.1-0.20230526005055-5843b7a4b27f
+	golang.org/x/mod v0.10.0
 	k8s.io/apimachinery v0.26.5
 	k8s.io/client-go v0.26.5
 	sigs.k8s.io/controller-runtime v0.14.6

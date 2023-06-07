@@ -22,8 +22,8 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/openshift/api/operator/v1alpha1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/openshift/api/config/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -110,9 +110,9 @@ func (in *ClusterRelocationSpec) DeepCopyInto(out *ClusterRelocationSpec) {
 		*out = make([]CatalogSource, len(*in))
 		copy(*out, *in)
 	}
-	if in.ImageDigestSources != nil {
-		in, out := &in.ImageDigestSources, &out.ImageDigestSources
-		*out = make([]v1alpha1.RepositoryDigestMirrors, len(*in))
+	if in.ImageDigestMirrors != nil {
+		in, out := &in.ImageDigestMirrors, &out.ImageDigestMirrors
+		*out = make([]v1.ImageDigestMirrors, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -142,7 +142,7 @@ func (in *ClusterRelocationStatus) DeepCopyInto(out *ClusterRelocationStatus) {
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]v1.Condition, len(*in))
+		*out = make([]metav1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
