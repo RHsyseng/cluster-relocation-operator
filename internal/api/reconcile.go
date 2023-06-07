@@ -31,8 +31,9 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 			// If there is no key set, generate one
 			// This is done so that we don't generate a new certificate each time Reconcile runs
 			if !ok {
+				logger.Info("generating new TLS cert for API")
 				var err error
-				secret.Data, err = generateNewCert(relocation, logger)
+				secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "api")
 				if err != nil {
 					return err
 				}
@@ -45,7 +46,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 				if commonName != fmt.Sprintf("api.%s", relocation.Spec.Domain) {
 					logger.Info("Domain name has changed, generating new TLS certificate for API")
 					var err error
-					secret.Data, err = generateNewCert(relocation, logger)
+					secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "api")
 					if err != nil {
 						return err
 					}
@@ -125,16 +126,4 @@ func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) erro
 		logger.Info("APIServer reverted to original state", "OperationResult", op)
 	}
 	return nil
-}
-
-func generateNewCert(relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) (map[string][]byte, error) {
-	logger.Info("generating new TLS cert for API")
-	certData, keyData, err := secrets.GenerateTLSKeyPair(relocation.Spec.Domain)
-	if err != nil {
-		return nil, err
-	}
-	return map[string][]byte{
-		corev1.TLSCertKey:       certData,
-		corev1.TLSPrivateKeyKey: keyData,
-	}, nil
 }
