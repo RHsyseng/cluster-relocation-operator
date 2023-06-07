@@ -24,6 +24,7 @@ import (
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	reconcileSsh "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
+	registryCert "github.com/RHsyseng/cluster-relocation-operator/internal/registryCert"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
@@ -191,6 +192,27 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, sshCondition)
 	}
 
+	// Applies a new registry certificate
+	if err := registryCert.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		registryCertCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeRegistryCert,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, registryCertCondition)
+		return ctrl.Result{}, err
+	} else {
+		registryCertCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeRegistryCert,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, registryCertCondition)
+	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -232,6 +254,10 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 	}
 
 	if err := reconcilePullSecret.Cleanup(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		return err
+	}
+
+	if err := registryCert.Cleanup(r.Client, ctx, logger); err != nil {
 		return err
 	}
 
