@@ -42,7 +42,7 @@ spec:
       name: Logan McNaughton
     - email: dchavero@redhat.com
       name: Daniel Chavero
-  maturity: alpha
+  maturity: beta
   minKubeVersion: 1.25.0
   provider:
     name: Cluster Relocation Operator
