@@ -76,10 +76,10 @@ func GenerateTLSKeyPair(domain string, prefix string) (map[string][]byte, error)
 }
 
 // copies a secret from one location to another
-func CopySecret(ctx context.Context, client client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme,
+func CopySecret(ctx context.Context, c client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme,
 	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string, settings SecretCopySettings) (controllerutil.OperationResult, error) {
 	origSecret := &corev1.Secret{}
-	if err := client.Get(ctx, types.NamespacedName{Name: origSecretName, Namespace: origSecretNamespace}, origSecret); err != nil {
+	if err := c.Get(ctx, types.NamespacedName{Name: origSecretName, Namespace: origSecretNamespace}, origSecret); err != nil {
 		return controllerutil.OperationResultNone, err
 	}
 
@@ -93,13 +93,13 @@ func CopySecret(ctx context.Context, client client.Client, relocation *rhsysengg
 				return controllerutil.OperationResultNone, err
 			}
 		}
-		if err := client.Update(ctx, origSecret); err != nil {
+		if err := c.Update(ctx, origSecret); err != nil {
 			return controllerutil.OperationResultNone, err
 		}
 	}
 
 	secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: destSecretName, Namespace: destSecretNamespace}}
-	op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
+	op, err := controllerutil.CreateOrUpdate(ctx, c, secret, func() error {
 		secret.Data = origSecret.Data
 		secret.Type = origSecret.Type
 		if settings.OwnDestination {

@@ -117,6 +117,7 @@ const (
 	ConditionTypeRegistryCert string = "RegistryCertReconciled"
 	ConditionTypeMirror       string = "MirrorReconciled"
 	ConditionTypeDns          string = "DNSReconciled"
+	ConditionTypeCatalog      string = "CatalogReconciled"
 )
 
 const (
