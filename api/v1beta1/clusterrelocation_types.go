@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
+	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,8 +36,8 @@ type ClusterRelocationSpec struct {
 	// Domain defines the new base domain for the cluster.
 	Domain string `json:"domain"`
 
-	// ImageDigestSources will be converted into ImageContentSourcePolicys on the cluster.
-	ImageDigestSources []operatorv1alpha1.RepositoryDigestMirrors `json:"imageDigestSources,omitempty"`
+	// ImageDigestMirrors is used to configured a mirror registry on the cluster.
+	ImageDigestMirrors []configv1.ImageDigestMirrors `json:"imageDigestMirrors,omitempty"`
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
 	// If it is omitted, a self-signed certificate will be generated.
