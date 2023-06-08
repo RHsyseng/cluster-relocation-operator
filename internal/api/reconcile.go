@@ -26,22 +26,31 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
 
 		op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
-			_, ok := secret.Data[corev1.TLSPrivateKeyKey]
+			_, ok := secret.Data[corev1.TLSCertKey]
 			// Check if the secret already has a key set
 			// If there is no key set, generate one
 			// This is done so that we don't generate a new certificate each time Reconcile runs
 			if !ok {
 				logger.Info("generating new TLS cert for API")
-				certData, keyData, err := secrets.GenerateTLSKeyPair(relocation.Spec.Domain)
+				var err error
+				secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "api")
 				if err != nil {
 					return err
 				}
-				secret.Data = map[string][]byte{
-					corev1.TLSCertKey:       certData,
-					corev1.TLSPrivateKeyKey: keyData,
-				}
 			} else {
 				logger.Info("TLS cert already exists for API")
+				commonName, err := secrets.GetCertCommonName(secret.Data[corev1.TLSCertKey])
+				if err != nil {
+					return err
+				}
+				if commonName != fmt.Sprintf("api.%s", relocation.Spec.Domain) {
+					logger.Info("Domain name has changed, generating new TLS certificate for API")
+					var err error
+					secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "api")
+					if err != nil {
+						return err
+					}
+				}
 			}
 			secret.Type = corev1.SecretTypeTLS
 			// Set the controller as the owner so that the secret is deleted along with the CR

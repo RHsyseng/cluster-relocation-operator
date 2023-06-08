@@ -27,34 +27,52 @@ type SecretCopySettings struct {
 	DestinationOwnedByController bool
 }
 
-func GenerateTLSKeyPair(domain string) ([]byte, []byte, error) {
+func GetCertCommonName(TLSCertKey []byte) (string, error) {
+	block, _ := pem.Decode(TLSCertKey)
+	if block == nil {
+		return "", fmt.Errorf("failed to decode certificate")
+	}
+
+	// Parse the certificate
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", err
+	}
+
+	return cert.Subject.CommonName, nil
+}
+
+func GenerateTLSKeyPair(domain string, prefix string) (map[string][]byte, error) {
 	// Generate a private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Create a self-signed certificate template
 	certificateTemplate := x509.Certificate{
 		SerialNumber:          big.NewInt(1),
-		Subject:               pkix.Name{CommonName: fmt.Sprintf("api.%s", domain)},
+		Subject:               pkix.Name{CommonName: fmt.Sprintf("%s.%s", prefix, domain)},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().Add(3650 * 24 * time.Hour), // Valid for 10 years
 		BasicConstraintsValid: true,
-		DNSNames:              []string{fmt.Sprintf("api.%s", domain)},
+		DNSNames:              []string{fmt.Sprintf("%s.%s", prefix, domain)},
 	}
 
 	// Create a self-signed certificate using the private key and certificate template
 	derBytes, err := x509.CreateCertificate(rand.Reader, &certificateTemplate, &certificateTemplate, &privateKey.PublicKey, privateKey)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Create PEM blocks for the certificate and private key
 	certificatePEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
 
-	return certificatePEM, privateKeyPEM, nil
+	return map[string][]byte{
+		corev1.TLSCertKey:       certificatePEM,
+		corev1.TLSPrivateKeyKey: privateKeyPEM,
+	}, nil
 }
 
 // copies a secret from one location to another
