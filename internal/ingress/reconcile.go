@@ -95,13 +95,6 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	// Define the IngressController's namespace and name
 	namespace := "openshift-ingress-operator"
 	name := "default"
-	certName := "ingress-cert"
-
-	err := operatorv1.Install(scheme) // Add operator.openshift.io/v1 to the scheme
-	if err != nil {
-		logger.Error(err, "Failed to install operator.openshift.io/v1")
-		return err
-	}
 
 	ingress := &operatorv1.IngressController{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
@@ -109,7 +102,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		Status:     operatorv1.IngressControllerStatus{},
 	}
 	op, err := controllerutil.CreateOrPatch(ctx, client, ingress, func() error {
-		ingress.Spec.DefaultCertificate = &corev1.LocalObjectReference{Name: certName}
+		ingress.Spec.DefaultCertificate = &corev1.LocalObjectReference{Name: origSecretName}
 		return nil
 	})
 	if err != nil {
