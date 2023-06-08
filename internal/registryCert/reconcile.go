@@ -14,6 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=create;update;get
+//+kubebuilder:rbac:groups=config.openshift.io,resources=images,verbs=patch;get
+
 const ConfigMapName = "generated-registry-cert"
 
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {

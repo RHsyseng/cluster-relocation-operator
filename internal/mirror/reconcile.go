@@ -15,6 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+//+kubebuilder:rbac:groups=operator.openshift.io,resources=imagecontentsourcepolicies,verbs=create;update;get;delete
+//+kubebuilder:rbac:groups=config.openshift.io,resources=imagedigestmirrorsets,verbs=create;update;get;delete
+
 const ImageSetName = "mirror-ocp"
 
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger, clusterVersion string) error {
