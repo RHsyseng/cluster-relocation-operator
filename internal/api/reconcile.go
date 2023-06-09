@@ -116,7 +116,7 @@ func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) erro
 	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
 	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
 	op, err := controllerutil.CreateOrPatch(ctx, client, apiServer, func() error {
-		apiServer.Spec.ServingCerts.NamedCertificates = []configv1.APIServerNamedServingCert{}
+		apiServer.Spec.ServingCerts.NamedCertificates = nil
 		return nil
 	})
 	if err != nil {
