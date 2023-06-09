@@ -22,7 +22,7 @@ import (
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	var origSecretName string
 	var origSecretNamespace string
-	if relocation.Spec.ApiCertRef.Name == "" {
+	if relocation.Spec.ApiCertRef == nil {
 		// If they haven't specified an ApiCertRef, we generate a self-signed certificate for them
 		origSecretName = "generated-api-secret"
 		origSecretNamespace = rhsysenggithubiov1beta1.ConfigNamespace
@@ -66,6 +66,9 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 			logger.Info("Self-signed API TLS cert modified", "OperationResult", op)
 		}
 	} else {
+		if relocation.Spec.ApiCertRef.Name == "" || relocation.Spec.ApiCertRef.Namespace == "" {
+			return fmt.Errorf("must specify secret name and namespace")
+		}
 		origSecretName = relocation.Spec.ApiCertRef.Name
 		origSecretNamespace = relocation.Spec.ApiCertRef.Namespace
 		logger.Info("Using user provided API certificate", "namespace", origSecretNamespace, "name", origSecretName)

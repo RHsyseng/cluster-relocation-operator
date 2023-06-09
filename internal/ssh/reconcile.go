@@ -32,7 +32,7 @@ type MachineConfigData struct {
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get;delete
 
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
-	if len(relocation.Spec.SSHKeys) == 0 {
+	if relocation.Spec.SSHKeys == nil {
 		return Cleanup(c, ctx, logger)
 	}
 
@@ -46,7 +46,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 					Users: []MachineConfigUsersData{
 						{
 							Name:              "core",
-							SshAuthorizedKeys: relocation.Spec.SSHKeys,
+							SshAuthorizedKeys: *relocation.Spec.SSHKeys,
 						},
 					},
 				},

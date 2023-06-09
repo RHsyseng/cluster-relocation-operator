@@ -21,7 +21,7 @@ import (
 const ImageSetName = "mirror-ocp"
 
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger, clusterVersion string) error {
-	if len(relocation.Spec.ImageDigestMirrors) == 0 {
+	if relocation.Spec.ImageDigestMirrors == nil {
 		return Cleanup(c, ctx, logger, clusterVersion)
 	}
 
@@ -52,7 +52,7 @@ func createICSP(c client.Client, scheme *runtime.Scheme, ctx context.Context, re
 	icsp := &operatorv1alpha1.ImageContentSourcePolicy{ObjectMeta: metav1.ObjectMeta{Name: ImageSetName}}
 	op, err := controllerutil.CreateOrUpdate(ctx, c, icsp, func() error {
 		icsp.Spec.RepositoryDigestMirrors = []operatorv1alpha1.RepositoryDigestMirrors{}
-		for _, v := range relocation.Spec.ImageDigestMirrors {
+		for _, v := range *relocation.Spec.ImageDigestMirrors {
 			mirrors := []string{}
 			for _, w := range v.Mirrors {
 				mirrors = append(mirrors, string(w))
@@ -78,7 +78,7 @@ func createICSP(c client.Client, scheme *runtime.Scheme, ctx context.Context, re
 func createIDMS(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	idms := &configv1.ImageDigestMirrorSet{ObjectMeta: metav1.ObjectMeta{Name: ImageSetName}}
 	op, err := controllerutil.CreateOrUpdate(ctx, c, idms, func() error {
-		idms.Spec.ImageDigestMirrors = relocation.Spec.ImageDigestMirrors
+		idms.Spec.ImageDigestMirrors = *relocation.Spec.ImageDigestMirrors
 
 		// Set the controller as the owner so that the IDMS is deleted along with the CR
 		return controllerutil.SetControllerReference(relocation, idms, scheme)

@@ -28,32 +28,32 @@ type ClusterRelocationSpec struct {
 
 	// ApiCertRef is a reference to a TLS secret that will be used for the API server.
 	// If it is omitted, a self-signed certificate will be generated.
-	ApiCertRef corev1.SecretReference `json:"apiCertRef,omitempty"`
+	ApiCertRef *corev1.SecretReference `json:"apiCertRef,omitempty"`
 
 	// CatalogSources define new CatalogSources to install on the cluster.
-	CatalogSources []CatalogSource `json:"catalogSources,omitempty"`
+	CatalogSources *[]CatalogSource `json:"catalogSources,omitempty"`
 
 	// Domain defines the new base domain for the cluster.
 	Domain string `json:"domain"`
 
 	// ImageDigestMirrors is used to configured a mirror registry on the cluster.
-	ImageDigestMirrors []configv1.ImageDigestMirrors `json:"imageDigestMirrors,omitempty"`
+	ImageDigestMirrors *[]configv1.ImageDigestMirrors `json:"imageDigestMirrors,omitempty"`
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
 	// If it is omitted, a self-signed certificate will be generated.
-	IngressCertRef corev1.SecretReference `json:"ingressCertRef,omitempty"`
+	IngressCertRef *corev1.SecretReference `json:"ingressCertRef,omitempty"`
 
 	// PullSecretRef is a reference to new cluster-wide pull secret.
 	// If defined, it will replace the secret located at openshift-config/pull-secret.
-	PullSecretRef corev1.SecretReference `json:"pullSecretRef,omitempty"`
+	PullSecretRef *corev1.SecretReference `json:"pullSecretRef,omitempty"`
 
 	// RegistryCert is a new trusted CA certificate.
 	// It will be added to image.config.openshift.io/cluster (additionalTrustedCA).
-	RegistryCert RegistryCert `json:"registryCert,omitempty"`
+	RegistryCert *RegistryCert `json:"registryCert,omitempty"`
 
 	// SSHKeys defines a list of authorized SSH keys for the 'core' user.
 	// If defined, it will be appended to the existing authorized SSH key(s).
-	SSHKeys []string `json:"sshKeys,omitempty"`
+	SSHKeys *[]string `json:"sshKeys,omitempty"`
 }
 
 // ClusterRelocationStatus defines the observed state of ClusterRelocation
@@ -103,7 +103,7 @@ type RegistryCert struct {
 	RegistryHostname string `json:"registryHostname"`
 
 	// RegistryPort is the port nubmer that the registry is served on.
-	RegistryPort string `json:"registryPort,omitempty"`
+	RegistryPort *string `json:"registryPort,omitempty"`
 
 	// Certificate is the certificate for the trusted certificate authority associated with the registry.
 	Certificate string `json:"certificate"`

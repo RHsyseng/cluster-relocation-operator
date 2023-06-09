@@ -2,6 +2,7 @@ package pullSecret
 
 import (
 	"context"
+	"fmt"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
@@ -17,9 +18,13 @@ import (
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;delete
 
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
-	if relocation.Spec.PullSecretRef.Name == "" {
+	if relocation.Spec.PullSecretRef == nil {
 		// run Cleanup function in case they are moving from PullSecretRef=<something> to PullSecretRef=<empty>
 		return Cleanup(c, scheme, ctx, relocation, logger)
+	}
+
+	if relocation.Spec.PullSecretRef.Name == "" || relocation.Spec.PullSecretRef.Namespace == "" {
+		return fmt.Errorf("must specify secret name and namespace")
 	}
 
 	backupPullSecret := &corev1.Secret{}
