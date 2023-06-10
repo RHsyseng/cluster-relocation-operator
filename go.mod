@@ -7,6 +7,7 @@ require (
 	github.com/onsi/gomega v1.27.7
 	github.com/openshift/api v0.0.0-20230221095031-69130006bb23
 	github.com/openshift/machine-config-operator v0.0.1-0.20230526005055-5843b7a4b27f
+	github.com/operator-framework/api v0.17.6
 	golang.org/x/mod v0.10.0
 	k8s.io/apimachinery v0.26.5
 	k8s.io/client-go v0.26.5
@@ -14,8 +15,10 @@ require (
 )
 
 require (
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
+	github.com/sirupsen/logrus v1.9.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 )
 

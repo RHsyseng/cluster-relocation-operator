@@ -29,14 +29,14 @@ type MachineConfigData struct {
 	Passwd   MachineConfigPasswdData `json:"passwd"`
 }
 
-func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if len(relocation.Spec.SSHKeys) == 0 {
-		return Cleanup(client, ctx, logger)
+		return Cleanup(c, ctx, logger)
 	}
 
 	for _, v := range []string{"master", "worker"} {
 		machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("core-ssh-key-%s", v)}}
-		op, err := controllerutil.CreateOrUpdate(ctx, client, machineConfig, func() error {
+		op, err := controllerutil.CreateOrUpdate(ctx, c, machineConfig, func() error {
 			machineConfig.Labels = map[string]string{"machineconfiguration.openshift.io/role": v}
 			configData := MachineConfigData{
 				Ignition: map[string]string{"version": "3.2.0"},
@@ -68,11 +68,11 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	return nil
 }
 
-func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) error {
+func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
 	// if they move from relocation.Spec.SSHKeys=<something> to relocation.Spec.SSHKeys=<empty>, we need to delete the MachineConfigs
 	for _, v := range []string{"master", "worker"} {
 		machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("core-ssh-key-%s", v)}}
-		if err := client.Delete(ctx, machineConfig); err != nil {
+		if err := c.Delete(ctx, machineConfig); err != nil {
 			if !errors.IsNotFound(err) {
 				return err
 			}

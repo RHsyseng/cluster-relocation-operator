@@ -22,6 +22,7 @@ import (
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
+	reconcileCatalog "github.com/RHsyseng/cluster-relocation-operator/internal/catalog"
 	reconcileDns "github.com/RHsyseng/cluster-relocation-operator/internal/dns"
 	reconcileMirror "github.com/RHsyseng/cluster-relocation-operator/internal/mirror"
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
@@ -31,13 +32,17 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+	operatorhubv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -47,7 +52,9 @@ import (
 // ClusterRelocationReconciler reconciles a ClusterRelocation object
 type ClusterRelocationReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme       *runtime.Scheme
+	Ctrl         controller.Controller
+	WatchingIDMS bool
 }
 
 const relocationFinalizer = "relocationfinalizer"
@@ -67,21 +74,6 @@ const relocationFinalizer = "relocationfinalizer"
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-
-	if err := configv1.Install(r.Scheme); err != nil { // Add config.openshift.io/v1 to the scheme
-		logger.Error(err, "Failed to install config.openshift.io/v1")
-		return ctrl.Result{}, err
-	}
-
-	if err := machineconfigurationv1.Install(r.Scheme); err != nil { // Add machineconfiguration.openshift.io/v1 to the scheme
-		logger.Error(err, "Failed to install machineconfiguration.openshift.io/v1")
-		return ctrl.Result{}, err
-	}
-
-	if err := operatorv1alpha1.Install(r.Scheme); err != nil { // Add operator.openshift.io/v1alpha1 to the scheme
-		logger.Error(err, "Failed to install operator.openshift.io/v1alpha1")
-		return ctrl.Result{}, err
-	}
 
 	relocation := &rhsysenggithubiov1beta1.ClusterRelocation{}
 
@@ -135,6 +127,22 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	} else {
 		logger.Info("validation succeeded")
+	}
+
+	clusterVersion := &configv1.ClusterVersion{}
+	if err := r.Client.Get(ctx, types.NamespacedName{Name: "version"}, clusterVersion); err != nil {
+		return ctrl.Result{}, err
+	}
+	clusterVersionString := fmt.Sprintf("v%s", clusterVersion.Status.Desired.Version)
+
+	if !r.WatchingIDMS {
+		if semver.Compare(clusterVersionString, "v4.12.999") == 1 {
+			// This has to be done dynamically because ImageDigestMirrorSet only exists on OCP 4.13+
+			if err := r.Ctrl.Watch(&source.Kind{Type: &configv1.ImageDigestMirrorSet{}}, &handler.EnqueueRequestForOwner{OwnerType: &rhsysenggithubiov1beta1.ClusterRelocation{}, IsController: true}); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		r.WatchingIDMS = true
 	}
 
 	// Applies a new certificate and domain alias to the API server
@@ -222,7 +230,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Applies new mirror configuration
-	if err := reconcileMirror.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := reconcileMirror.Reconcile(r.Client, r.Scheme, ctx, relocation, logger, clusterVersionString); err != nil {
 		mirrorCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -240,6 +248,27 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, mirrorCondition)
+	}
+
+	// Applies new catalog sources
+	if err := reconcileCatalog.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		catalogCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeCatalog,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, catalogCondition)
+		return ctrl.Result{}, err
+	} else {
+		catalogCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeCatalog,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, catalogCondition)
 	}
 
 	// Adds new internal DNS records
@@ -315,13 +344,47 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 	return nil
 }
 
+func (r *ClusterRelocationReconciler) installSchemes() error {
+	if err := configv1.Install(r.Scheme); err != nil { // Add config.openshift.io/v1 to the scheme
+		return err
+	}
+
+	if err := machineconfigurationv1.Install(r.Scheme); err != nil { // Add machineconfiguration.openshift.io/v1 to the scheme
+		return err
+	}
+
+	if err := operatorv1alpha1.Install(r.Scheme); err != nil { // Add operator.openshift.io/v1alpha1 to the scheme
+		return err
+	}
+
+	if err := operatorhubv1alpha1.AddToScheme(r.Scheme); err != nil { // Add operators.coreos.com/v1alpha1 to the scheme
+		return err
+	}
+	return nil
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClusterRelocationReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+	if err := r.installSchemes(); err != nil {
+		return err
+	}
+
+	controller, err := ctrl.NewControllerManagedBy(mgr).
 		For(&rhsysenggithubiov1beta1.ClusterRelocation{}).
 		// for user provided certificates, we set a non-controller ownership in order to watch for changes
 		// Owns() only watches for 'IsController: true' ownership, so we need to watch Secrets this way
 		// 'IsController: false' watches for all types of ownership (including controller ownership)
 		Watches(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestForOwner{OwnerType: &rhsysenggithubiov1beta1.ClusterRelocation{}, IsController: false}).
-		Complete(r)
+		Owns(&corev1.ConfigMap{}).
+		Owns(&operatorhubv1alpha1.CatalogSource{}).
+		Owns(&machineconfigurationv1.MachineConfig{}).
+		Owns(&operatorv1alpha1.ImageContentSourcePolicy{}).
+		Build(r)
+	if err != nil {
+		return err
+	}
+
+	r.Ctrl = controller
+
+	return nil
 }

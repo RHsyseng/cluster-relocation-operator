@@ -16,13 +16,13 @@ import (
 
 const ConfigMapName = "generated-registry-cert"
 
-func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if relocation.Spec.RegistryCert.Certificate == "" {
-		return Cleanup(client, ctx, logger)
+		return Cleanup(c, ctx, logger)
 	}
 
 	configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: ConfigMapName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}}
-	op, err := controllerutil.CreateOrUpdate(ctx, client, configMap, func() error {
+	op, err := controllerutil.CreateOrUpdate(ctx, c, configMap, func() error {
 		var port string
 		if relocation.Spec.RegistryCert.RegistryPort != "" {
 			port = fmt.Sprintf("..%s", relocation.Spec.RegistryCert.RegistryPort)
@@ -41,7 +41,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	}
 
 	imageConfig := &configv1.Image{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
-	op, err = controllerutil.CreateOrPatch(ctx, client, imageConfig, func() error {
+	op, err = controllerutil.CreateOrPatch(ctx, c, imageConfig, func() error {
 		imageConfig.Spec.AdditionalTrustedCA = configv1.ConfigMapNameReference{Name: ConfigMapName}
 		return nil
 	})
@@ -54,11 +54,11 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	return nil
 }
 
-func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) error {
+func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
 	// if they move from relocation.Spec.RegistryCert.Certificate=<something> to relocation.Spec.RegistryCert.Certificate=<empty>
 	// we need to clear out the AdditionalTrustedCA
 	imageConfig := &configv1.Image{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
-	op, err := controllerutil.CreateOrPatch(ctx, client, imageConfig, func() error {
+	op, err := controllerutil.CreateOrPatch(ctx, c, imageConfig, func() error {
 		imageConfig.Spec.AdditionalTrustedCA = configv1.ConfigMapNameReference{}
 		return nil
 	})

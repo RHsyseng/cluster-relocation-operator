@@ -33,9 +33,9 @@ type MachineConfigData struct {
 	Storage  MachineConfigStorageData `json:"storage"`
 }
 
-func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	nodes := &corev1.NodeList{}
-	if err := client.List(ctx, nodes); err != nil {
+	if err := c.List(ctx, nodes); err != nil {
 		return err
 	}
 	if len(nodes.Items) > 1 {
@@ -50,7 +50,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	}
 
 	machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: "relocation-dns-master"}}
-	op, err := controllerutil.CreateOrUpdate(ctx, client, machineConfig, func() error {
+	op, err := controllerutil.CreateOrUpdate(ctx, c, machineConfig, func() error {
 		snoDnsContents := fmt.Sprintf("address=/apps.%s/%s\n"+
 			"address=/api-int.%s/%s\n"+
 			"address=/api.%s/%s\n",

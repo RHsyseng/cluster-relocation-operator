@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	var origSecretName string
 	var origSecretNamespace string
 	if relocation.Spec.ApiCertRef.Name == "" {
@@ -25,7 +25,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		origSecretNamespace = rhsysenggithubiov1beta1.ConfigNamespace
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
 
-		op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
+		op, err := controllerutil.CreateOrUpdate(ctx, c, secret, func() error {
 			_, ok := secret.Data[corev1.TLSCertKey]
 			// Check if the secret already has a key set
 			// If there is no key set, generate one
@@ -81,7 +81,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 				OwnDestination:               true,
 				DestinationOwnedByController: true,
 			}
-			op, err := secrets.CopySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
+			op, err := secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 			if err != nil {
 				return err
 			}
@@ -93,7 +93,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	}
 
 	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
-	op, err := controllerutil.CreateOrPatch(ctx, client, apiServer, func() error {
+	op, err := controllerutil.CreateOrPatch(ctx, c, apiServer, func() error {
 		apiServer.Spec.ServingCerts.NamedCertificates = []configv1.APIServerNamedServingCert{
 			{
 				Names:              []string{fmt.Sprintf("api.%s", relocation.Spec.Domain)},
@@ -111,11 +111,11 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	return nil
 }
 
-func Cleanup(client client.Client, ctx context.Context, logger logr.Logger) error {
+func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
 	// We modified the APIServer resource, but we don't own it
 	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
 	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
-	op, err := controllerutil.CreateOrPatch(ctx, client, apiServer, func() error {
+	op, err := controllerutil.CreateOrPatch(ctx, c, apiServer, func() error {
 		apiServer.Spec.ServingCerts.NamedCertificates = nil
 		return nil
 	})
