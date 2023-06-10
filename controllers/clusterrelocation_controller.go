@@ -32,6 +32,7 @@ import (
 
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	operatorhubv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -364,6 +365,10 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 		return err
 	}
 
+	if err := operatorv1.Install(r.Scheme); err != nil { // Add config.openshift.io/v1 to the scheme
+		return err
+	}
+
 	if err := machineconfigurationv1.Install(r.Scheme); err != nil { // Add machineconfiguration.openshift.io/v1 to the scheme
 		return err
 	}
@@ -375,6 +380,7 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 	if err := operatorhubv1alpha1.AddToScheme(r.Scheme); err != nil { // Add operators.coreos.com/v1alpha1 to the scheme
 		return err
 	}
+
 	return nil
 }
 

@@ -7,6 +7,7 @@ import (
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
 	"github.com/go-logr/logr"
+	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 
 	// Configure certificates with the new domain name for the ingress
 	var origSecretName string
@@ -26,7 +27,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 		origSecretNamespace = rhsysenggithubiov1beta1.ConfigNamespace
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
 
-		op, err := controllerutil.CreateOrUpdate(ctx, client, secret, func() error {
+		op, err := controllerutil.CreateOrUpdate(ctx, c, secret, func() error {
 			_, ok := secret.Data[corev1.TLSCertKey]
 			// Check if the secret already has a key set
 			// If there is no key set, generate one
@@ -82,7 +83,7 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 				OwnDestination:               true,
 				DestinationOwnedByController: true,
 			}
-			op, err := secrets.CopySecret(ctx, client, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
+			op, err := secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 			if err != nil {
 				return err
 			}
@@ -96,13 +97,13 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	namespace := "openshift-ingress-operator"
 	name := "default"
 
-	ingress := &operatorv1.IngressController{
+	ingressController := &operatorv1.IngressController{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec:       operatorv1.IngressControllerSpec{},
 		Status:     operatorv1.IngressControllerStatus{},
 	}
-	op, err := controllerutil.CreateOrPatch(ctx, client, ingress, func() error {
-		ingress.Spec.DefaultCertificate = &corev1.LocalObjectReference{Name: origSecretName}
+	op, err := controllerutil.CreateOrPatch(ctx, c, ingressController, func() error {
+		ingressController.Spec.DefaultCertificate = &corev1.LocalObjectReference{Name: origSecretName}
 		return nil
 	})
 	if err != nil {
@@ -110,7 +111,50 @@ func Reconcile(client client.Client, scheme *runtime.Scheme, ctx context.Context
 	}
 
 	if op != controllerutil.OperationResultNone {
-		logger.Info("APIServer modified", "OperationResult", op)
+		logger.Info("IngressController modified", "OperationResult", op)
+	}
+
+	ingress := &configv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+		Spec:       configv1.IngressSpec{},
+		Status:     configv1.IngressStatus{},
+	}
+	op, err = controllerutil.CreateOrPatch(ctx, c, ingress, func() error {
+		ingress.Spec.AppsDomain = relocation.Spec.Domain
+		ingress.Spec.ComponentRoutes = []configv1.ComponentRouteSpec{
+			{
+				Hostname:  configv1.Hostname(fmt.Sprintf("console-openshift-console.apps.%s", relocation.Spec.Domain)),
+				Name:      "console",
+				Namespace: "openshift-console",
+				ServingCertKeyPairSecret: configv1.SecretNameReference{
+					Name: origSecretName,
+				},
+			},
+			{
+				Hostname:  configv1.Hostname(fmt.Sprintf("downloads-openshift-console.apps.%s", relocation.Spec.Domain)),
+				Name:      "downloads",
+				Namespace: "openshift-console",
+				ServingCertKeyPairSecret: configv1.SecretNameReference{
+					Name: origSecretName,
+				},
+			},
+			{
+				Hostname:  configv1.Hostname(fmt.Sprintf("oauth-openshift.apps.%s", relocation.Spec.Domain)),
+				Name:      "oauth-openshift",
+				Namespace: "openshift-authentication",
+				ServingCertKeyPairSecret: configv1.SecretNameReference{
+					Name: origSecretName,
+				},
+			},
+		}
+		return err
+	})
+	if err != nil {
+		return err
+	}
+
+	if op != controllerutil.OperationResultNone {
+		logger.Info("Ingress domain aliases modified", "OperationResult", op)
 	}
 
 	return nil
