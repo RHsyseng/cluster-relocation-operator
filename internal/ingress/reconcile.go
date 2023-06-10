@@ -91,6 +91,17 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 				logger.Info(fmt.Sprintf("User provided cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
 			}
 			origSecretName = secretName
+
+			// Copy cert secret to openshift-ingress namespace for ingress alias update
+
+			destSecreteNamespace := "openshift-ingress"
+			op, err = secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, destSecreteNamespace, copySettings)
+			if err != nil {
+				return err
+			}
+			if op != controllerutil.OperationResultNone {
+				logger.Info(fmt.Sprintf("User provided cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
+			}
 		}
 	}
 	// Define the IngressController's namespace and name
