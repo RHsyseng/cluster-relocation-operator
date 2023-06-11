@@ -169,6 +169,28 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
 	}
 
+	// Applies a new certificate and domain alias to the Apps ingressesed
+	if err := reconcileIngress.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		fmt.Printf("Error while patch ingress controller")
+		ingressCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeIngress,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
+		return ctrl.Result{}, err
+	} else {
+		ingressCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeIngress,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
+	}
+
 	// Apply a new cluster-wide pull secret
 	if err := reconcilePullSecret.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
 		pullSecretCondition := metav1.Condition{
@@ -293,19 +315,6 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, dnsCondition)
-	}
-
-	if err := reconcileIngress.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
-		fmt.Printf("Error while patch ingress controller")
-		ingressCondition := metav1.Condition{
-			Status:             metav1.ConditionFalse,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
-			Message:            err.Error(),
-			Type:               rhsysenggithubiov1beta1.ConditionTypeApi,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
-		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

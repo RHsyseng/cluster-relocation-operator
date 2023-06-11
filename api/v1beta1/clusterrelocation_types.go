@@ -112,6 +112,7 @@ type RegistryCert struct {
 const (
 	ConditionTypeReady        string = "Ready"
 	ConditionTypeApi          string = "APIReconciled"
+	ConditionTypeIngress      string = "IngressReconciled"
 	ConditionTypePullSecret   string = "PullSecretReconciled"
 	ConditionTypeSsh          string = "SSHKeyReconciled"
 	ConditionTypeRegistryCert string = "RegistryCertReconciled"

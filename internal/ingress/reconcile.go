@@ -69,10 +69,11 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 		origSecretNamespace = relocation.Spec.IngressCertRef.Namespace
 		logger.Info("Using user provided Ingress certificate", "namespace", origSecretNamespace, "name", origSecretName)
 
-		// The certificate must be in the openshift-config namespace
+		// The certificate must be in the openshift-ingress namespace
 		// so if their certificate is in another namespace, we copy it
 		if origSecretNamespace != rhsysenggithubiov1beta1.ConfigNamespace {
 			secretName := "copied-ingress-secret"
+			destSecreteNamespace := "openshift-ingress"
 			// Copy the secret into the openshift-config namespace
 			// the original may be owned by another controller (cert-manager for example)
 			// we add non-controller ownership to this secret, in order to watch it.
@@ -83,7 +84,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 				OwnDestination:               true,
 				DestinationOwnedByController: true,
 			}
-			op, err := secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
+			op, err := secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, destSecreteNamespace, copySettings)
 			if err != nil {
 				return err
 			}
@@ -92,18 +93,9 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 			}
 			origSecretName = secretName
 
-			// Copy cert secret to openshift-ingress namespace for ingress alias update
-
-			destSecreteNamespace := "openshift-ingress"
-			op, err = secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, destSecreteNamespace, copySettings)
-			if err != nil {
-				return err
-			}
-			if op != controllerutil.OperationResultNone {
-				logger.Info(fmt.Sprintf("User provided cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
-			}
 		}
 	}
+
 	// Define the IngressController's namespace and name
 	namespace := "openshift-ingress-operator"
 	name := "default"
