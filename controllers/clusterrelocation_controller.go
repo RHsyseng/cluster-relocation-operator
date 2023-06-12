@@ -357,6 +357,10 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 		return err
 	}
 
+	if err := reconcileIngress.Cleanup(r.Client, ctx, logger); err != nil {
+		return err
+	}
+
 	if err := reconcilePullSecret.Cleanup(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
 		return err
 	}

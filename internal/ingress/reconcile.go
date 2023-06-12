@@ -179,3 +179,42 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 
 	return nil
 }
+
+// We modified the Ingress Controller and Ingress Cluster resources, but we don't own it
+// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
+func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
+	namespace := "openshift-ingress-operator"
+	name := "default"
+	ingressController := &operatorv1.IngressController{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Spec:       operatorv1.IngressControllerSpec{},
+		Status:     operatorv1.IngressControllerStatus{},
+	}
+	op, err := controllerutil.CreateOrPatch(ctx, c, ingressController, func() error {
+		ingressController.Spec.DefaultCertificate = nil
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if op != controllerutil.OperationResultNone {
+		logger.Info("Ingress Controller reverted to original state", "OperationResult", op)
+	}
+	ingress := &configv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
+		Spec:       configv1.IngressSpec{},
+		Status:     configv1.IngressStatus{},
+	}
+	op, err = controllerutil.CreateOrPatch(ctx, c, ingress, func() error {
+		ingress.Spec.AppsDomain = ""
+		ingress.Spec.ComponentRoutes = nil
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if op != controllerutil.OperationResultNone {
+		logger.Info("Ingress cluster reverted to original state", "OperationResult", op)
+	}
+	return nil
+}
