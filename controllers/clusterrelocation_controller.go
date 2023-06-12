@@ -24,12 +24,15 @@ import (
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
 	reconcileCatalog "github.com/RHsyseng/cluster-relocation-operator/internal/catalog"
 	reconcileDns "github.com/RHsyseng/cluster-relocation-operator/internal/dns"
+	reconcileIngress "github.com/RHsyseng/cluster-relocation-operator/internal/ingress"
 	reconcileMirror "github.com/RHsyseng/cluster-relocation-operator/internal/mirror"
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	registryCert "github.com/RHsyseng/cluster-relocation-operator/internal/registryCert"
 	reconcileSsh "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
+
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	operatorhubv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -164,6 +167,28 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
+	}
+
+	// Applies a new certificate and domain alias to the Apps ingressesed
+	if err := reconcileIngress.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+		fmt.Printf("Error while patch ingress controller")
+		ingressCondition := metav1.Condition{
+			Status:             metav1.ConditionFalse,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
+			Message:            err.Error(),
+			Type:               rhsysenggithubiov1beta1.ConditionTypeIngress,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
+		return ctrl.Result{}, err
+	} else {
+		ingressCondition := metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeIngress,
+			ObservedGeneration: relocation.GetGeneration(),
+		}
+		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
 	}
 
 	// Apply a new cluster-wide pull secret
@@ -332,6 +357,10 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 		return err
 	}
 
+	if err := reconcileIngress.Cleanup(r.Client, ctx, logger); err != nil {
+		return err
+	}
+
 	if err := reconcilePullSecret.Cleanup(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
 		return err
 	}
@@ -349,6 +378,10 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 		return err
 	}
 
+	if err := operatorv1.Install(r.Scheme); err != nil { // Add config.openshift.io/v1 to the scheme
+		return err
+	}
+
 	if err := machineconfigurationv1.Install(r.Scheme); err != nil { // Add machineconfiguration.openshift.io/v1 to the scheme
 		return err
 	}
@@ -360,6 +393,7 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 	if err := operatorhubv1alpha1.AddToScheme(r.Scheme); err != nil { // Add operators.coreos.com/v1alpha1 to the scheme
 		return err
 	}
+
 	return nil
 }
 
