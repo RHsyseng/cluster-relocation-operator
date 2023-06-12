@@ -61,6 +61,13 @@ rules:
   - get
   - patch
 - apiGroups:
+  - config.openshift.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - patch
+- apiGroups:
   - machineconfiguration.openshift.io
   resources:
   - machineconfigs
@@ -80,6 +87,13 @@ rules:
   - get
   - update
   - watch
+- apiGroups:
+  - operator.openshift.io
+  resources:
+  - ingresscontrollers
+  verbs:
+  - get
+  - patch
 - apiGroups:
   - operators.coreos.com
   resources:

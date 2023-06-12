@@ -16,6 +16,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get
+//+kubebuilder:rbac:groups=operator.openshift.io,resources=ingresscontrollers,verbs=patch;get
+//+kubebuilder:rbac:groups=config.openshift.io,resources=ingresses,verbs=patch;get
+
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 
 	// Configure certificates with the new domain name for the ingress
