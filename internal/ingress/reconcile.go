@@ -24,7 +24,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	if relocation.Spec.IngressCertRef.Name == "" {
 		// If they haven't specified an IngressCertRef, we generate a self-signed certificate for them
 		origSecretName = "generated-ingress-secret"
-		origSecretNamespace = rhsysenggithubiov1beta1.ConfigNamespace
+		origSecretNamespace = "openshift-ingress"
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
 
 		op, err := controllerutil.CreateOrUpdate(ctx, c, secret, func() error {
@@ -39,6 +39,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 				if err != nil {
 					return err
 				}
+
 			} else {
 				logger.Info("TLS cert already exists for Ingresses")
 				commonName, err := secrets.GetCertCommonName(secret.Data[corev1.TLSCertKey])
@@ -63,6 +64,22 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 		}
 		if op != controllerutil.OperationResultNone {
 			logger.Info("Self-signed TLS cert modified", "OperationResult", op)
+		}
+
+		secretName := origSecretName
+		destSecretNamespace := "openshift-config"
+		copySettings := secrets.SecretCopySettings{
+			OwnOriginal:                  false,
+			OriginalOwnedByController:    false,
+			OwnDestination:               true,
+			DestinationOwnedByController: true,
+		}
+		op, err = secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, destSecretNamespace, copySettings)
+		if err != nil {
+			return err
+		}
+		if op != controllerutil.OperationResultNone {
+			logger.Info(fmt.Sprintf("User provided cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
 		}
 	} else {
 		origSecretName = relocation.Spec.IngressCertRef.Name
