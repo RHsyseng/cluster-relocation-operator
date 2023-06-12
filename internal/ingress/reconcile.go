@@ -28,7 +28,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	if relocation.Spec.IngressCertRef.Name == "" {
 		// If they haven't specified an IngressCertRef, we generate a self-signed certificate for them
 		origSecretName = "generated-ingress-secret"
-		origSecretNamespace = "openshift-ingress"
+		origSecretNamespace = rhsysenggithubiov1beta1.IngressNamespace
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
 
 		op, err := controllerutil.CreateOrUpdate(ctx, c, secret, func() error {
@@ -43,7 +43,6 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 				if err != nil {
 					return err
 				}
-
 			} else {
 				logger.Info("TLS cert already exists for Ingresses")
 				commonName, err := secrets.GetCertCommonName(secret.Data[corev1.TLSCertKey])
@@ -67,23 +66,22 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
-			logger.Info("Self-signed TLS cert modified", "OperationResult", op)
+			logger.Info("Self-signed Ingress TLS cert modified", "OperationResult", op)
 		}
 
 		secretName := origSecretName
-		destSecretNamespace := "openshift-config"
 		copySettings := secrets.SecretCopySettings{
 			OwnOriginal:                  false,
 			OriginalOwnedByController:    false,
 			OwnDestination:               true,
 			DestinationOwnedByController: true,
 		}
-		op, err = secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, destSecretNamespace, copySettings)
+		op, err = secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 		if err != nil {
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
-			logger.Info(fmt.Sprintf("User provided cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
+			logger.Info(fmt.Sprintf("Generated Ingress cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
 		}
 	} else {
 		origSecretName = relocation.Spec.IngressCertRef.Name
@@ -91,41 +89,42 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 		logger.Info("Using user provided Ingress certificate", "namespace", origSecretNamespace, "name", origSecretName)
 
 		// The certificate must be in the openshift-ingress namespace
-		// so if their certificate is in another namespace, we copy it
-		if origSecretNamespace != rhsysenggithubiov1beta1.ConfigNamespace {
-			secretName := "copied-ingress-secret"
-			destSecreteNamespace := "openshift-ingress"
-			// Copy the secret into the openshift-config namespace
-			// the original may be owned by another controller (cert-manager for example)
-			// we add non-controller ownership to this secret, in order to watch it.
-			// our controller should own the destination secret
-			copySettings := secrets.SecretCopySettings{
-				OwnOriginal:                  true,
-				OriginalOwnedByController:    false,
-				OwnDestination:               true,
-				DestinationOwnedByController: true,
-			}
-			op, err := secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, destSecreteNamespace, copySettings)
-			if err != nil {
-				return err
-			}
-			if op != controllerutil.OperationResultNone {
-				logger.Info(fmt.Sprintf("User provided cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
-			}
-			origSecretName = secretName
-
+		// as well as the openshift-config namespace, so we copy it
+		secretName := "copied-ingress-secret"
+		// Copy the secret into the openshift-ingress namespace
+		// the original may be owned by another controller (cert-manager for example)
+		// we add non-controller ownership to this secret, in order to watch it.
+		// our controller should own the destination secret
+		copySettings := secrets.SecretCopySettings{
+			OwnOriginal:                  true,
+			OriginalOwnedByController:    false,
+			OwnDestination:               true,
+			DestinationOwnedByController: true,
 		}
+		op, err := secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.IngressNamespace, copySettings)
+		if err != nil {
+			return err
+		}
+		if op != controllerutil.OperationResultNone {
+			logger.Info(fmt.Sprintf("User provided Ingress cert copied to %s", rhsysenggithubiov1beta1.IngressNamespace), "OperationResult", op)
+		}
+
+		// Copy the secret into the openshift-config namespace
+		op, err = secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
+		if err != nil {
+			return err
+		}
+		if op != controllerutil.OperationResultNone {
+			logger.Info(fmt.Sprintf("User provided Ingress cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
+		}
+		origSecretName = secretName
 	}
 
 	// Define the IngressController's namespace and name
 	namespace := "openshift-ingress-operator"
 	name := "default"
 
-	ingressController := &operatorv1.IngressController{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
-		Spec:       operatorv1.IngressControllerSpec{},
-		Status:     operatorv1.IngressControllerStatus{},
-	}
+	ingressController := &operatorv1.IngressController{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
 	op, err := controllerutil.CreateOrPatch(ctx, c, ingressController, func() error {
 		ingressController.Spec.DefaultCertificate = &corev1.LocalObjectReference{Name: origSecretName}
 		return nil
@@ -138,11 +137,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 		logger.Info("IngressController modified", "OperationResult", op)
 	}
 
-	ingress := &configv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
-		Spec:       configv1.IngressSpec{},
-		Status:     configv1.IngressStatus{},
-	}
+	ingress := &configv1.Ingress{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
 	op, err = controllerutil.CreateOrPatch(ctx, c, ingress, func() error {
 		ingress.Spec.AppsDomain = relocation.Spec.Domain
 		ingress.Spec.ComponentRoutes = []configv1.ComponentRouteSpec{
@@ -189,11 +184,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
 	namespace := "openshift-ingress-operator"
 	name := "default"
-	ingressController := &operatorv1.IngressController{
-		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
-		Spec:       operatorv1.IngressControllerSpec{},
-		Status:     operatorv1.IngressControllerStatus{},
-	}
+	ingressController := &operatorv1.IngressController{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
 	op, err := controllerutil.CreateOrPatch(ctx, c, ingressController, func() error {
 		ingressController.Spec.DefaultCertificate = nil
 		return nil
@@ -204,11 +195,7 @@ func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
 	if op != controllerutil.OperationResultNone {
 		logger.Info("Ingress Controller reverted to original state", "OperationResult", op)
 	}
-	ingress := &configv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{Name: "cluster"},
-		Spec:       configv1.IngressSpec{},
-		Status:     configv1.IngressStatus{},
-	}
+	ingress := &configv1.Ingress{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
 	op, err = controllerutil.CreateOrPatch(ctx, c, ingress, func() error {
 		ingress.Spec.AppsDomain = ""
 		ingress.Spec.ComponentRoutes = nil

@@ -63,7 +63,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
-			logger.Info("Self-signed TLS cert modified", "OperationResult", op)
+			logger.Info("Self-signed API TLS cert modified", "OperationResult", op)
 		}
 	} else {
 		origSecretName = relocation.Spec.ApiCertRef.Name
@@ -89,7 +89,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 				return err
 			}
 			if op != controllerutil.OperationResultNone {
-				logger.Info(fmt.Sprintf("User provided cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
+				logger.Info(fmt.Sprintf("User provided API cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
 			}
 			origSecretName = secretName
 		}

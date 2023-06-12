@@ -170,7 +170,6 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Applies a new certificate and domain alias to the Apps ingressesed
 	if err := reconcileIngress.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
-		fmt.Printf("Error while patch ingress controller")
 		ingressCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -377,7 +376,7 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 		return err
 	}
 
-	if err := operatorv1.Install(r.Scheme); err != nil { // Add config.openshift.io/v1 to the scheme
+	if err := operatorv1.Install(r.Scheme); err != nil { // Add operator.openshift.io/v1 to the scheme
 		return err
 	}
 
