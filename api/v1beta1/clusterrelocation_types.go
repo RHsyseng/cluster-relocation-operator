@@ -26,9 +26,9 @@ import (
 type ClusterRelocationSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// ApiCertRef is a reference to a TLS secret that will be used for the API server.
+	// APICertRef is a reference to a TLS secret that will be used for the API server.
 	// If it is omitted, a self-signed certificate will be generated.
-	ApiCertRef *corev1.SecretReference `json:"apiCertRef,omitempty"`
+	APICertRef *corev1.SecretReference `json:"apiCertRef,omitempty"`
 
 	// CatalogSources define new CatalogSources to install on the cluster.
 	CatalogSources *[]CatalogSource `json:"catalogSources,omitempty"`
@@ -111,13 +111,13 @@ type RegistryCert struct {
 
 const (
 	ConditionTypeReady        string = "Ready"
-	ConditionTypeApi          string = "APIReconciled"
+	ConditionTypeAPI          string = "APIReconciled"
 	ConditionTypeIngress      string = "IngressReconciled"
 	ConditionTypePullSecret   string = "PullSecretReconciled"
-	ConditionTypeSsh          string = "SSHKeyReconciled"
+	ConditionTypeSSH          string = "SSHKeyReconciled"
 	ConditionTypeRegistryCert string = "RegistryCertReconciled"
 	ConditionTypeMirror       string = "MirrorReconciled"
-	ConditionTypeDns          string = "DNSReconciled"
+	ConditionTypeDNS          string = "DNSReconciled"
 	ConditionTypeCatalog      string = "CatalogReconciled"
 )
 

@@ -20,8 +20,7 @@ import (
 //+kubebuilder:rbac:groups=operator.openshift.io,resources=ingresscontrollers,verbs=patch;get
 //+kubebuilder:rbac:groups=config.openshift.io,resources=ingresses,verbs=patch;get
 
-func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
-
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	// Configure certificates with the new domain name for the ingress
 	var origSecretName string
 	var origSecretNamespace string
@@ -184,7 +183,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 
 // We modified the Ingress Controller and Ingress Cluster resources, but we don't own it
 // Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
-func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
+func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 	namespace := "openshift-ingress-operator"
 	name := "default"
 	ingressController := &operatorv1.IngressController{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}

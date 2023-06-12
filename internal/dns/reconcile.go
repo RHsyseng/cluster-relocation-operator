@@ -36,7 +36,7 @@ type MachineConfigData struct {
 //+kubebuilder:rbac:groups="",resources=nodes,verbs=list
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get
 
-func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	nodes := &corev1.NodeList{}
 	if err := c.List(ctx, nodes); err != nil {
 		return err
@@ -47,17 +47,17 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 		logger.Info("DNS reconfiguration not supported on multi-node clusters. Ensure that external DNS records exist for the new domain")
 		return nil
 	}
-	internalIp, err := getInternalIp(nodes.Items[0])
+	internalIP, err := getInternalIP(nodes.Items[0])
 	if err != nil {
 		return err
 	}
 
 	machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: "relocation-dns-master"}}
 	op, err := controllerutil.CreateOrUpdate(ctx, c, machineConfig, func() error {
-		snoDnsContents := fmt.Sprintf("address=/apps.%s/%s\n"+
+		snoDNSContents := fmt.Sprintf("address=/apps.%s/%s\n"+
 			"address=/api-int.%s/%s\n"+
 			"address=/api.%s/%s\n",
-			relocation.Spec.Domain, internalIp, relocation.Spec.Domain, internalIp, relocation.Spec.Domain, internalIp)
+			relocation.Spec.Domain, internalIP, relocation.Spec.Domain, internalIP, relocation.Spec.Domain, internalIP)
 
 		machineConfig.Labels = map[string]string{"machineconfiguration.openshift.io/role": "master"}
 		configData := MachineConfigData{
@@ -66,9 +66,9 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 				Files: []MachineConfigFilesData{
 					{
 						Contents: map[string]string{
-							"source": fmt.Sprintf("data:text/plain;charset=utf-8;base64,%s", base64.StdEncoding.EncodeToString([]byte(snoDnsContents))),
+							"source": fmt.Sprintf("data:text/plain;charset=utf-8;base64,%s", base64.StdEncoding.EncodeToString([]byte(snoDNSContents))),
 						},
-						Mode:      0644,
+						Mode:      0o644,
 						Overwrite: true,
 						Path:      "/etc/dnsmasq.d/relocation-domain.conf",
 						User: map[string]string{
@@ -95,7 +95,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	return nil
 }
 
-func getInternalIp(node corev1.Node) (string, error) {
+func getInternalIP(node corev1.Node) (string, error) {
 	for _, v := range node.Status.Addresses {
 		if v.Type == corev1.NodeInternalIP {
 			return v.Address, nil

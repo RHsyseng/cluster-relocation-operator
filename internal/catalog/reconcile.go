@@ -16,8 +16,8 @@ import (
 
 const marketplaceNamespace = "openshift-marketplace"
 
-func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
-	if err := Cleanup(c, ctx, relocation, logger); err != nil {
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+	if err := Cleanup(ctx, c, relocation, logger); err != nil {
 		return err
 	}
 
@@ -43,7 +43,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	return nil
 }
 
-func Cleanup(c client.Client, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Cleanup(ctx context.Context, c client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	// if they remove something from relocation.Spec.CatalogSources, we need to clean it up
 	catalogSources := &operatorhubv1alpha1.CatalogSourceList{}
 	if err := c.List(ctx, catalogSources, client.InNamespace(marketplaceNamespace)); err != nil {

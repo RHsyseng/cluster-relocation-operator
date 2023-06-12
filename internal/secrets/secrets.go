@@ -79,7 +79,8 @@ func GenerateTLSKeyPair(domain string, prefix string) (map[string][]byte, error)
 
 // copies a secret from one location to another
 func CopySecret(ctx context.Context, c client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, scheme *runtime.Scheme,
-	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string, settings SecretCopySettings) (controllerutil.OperationResult, error) {
+	origSecretName string, origSecretNamespace string, destSecretName string, destSecretNamespace string, settings SecretCopySettings,
+) (controllerutil.OperationResult, error) {
 	origSecret := &corev1.Secret{}
 	if err := c.Get(ctx, types.NamespacedName{Name: origSecretName, Namespace: origSecretNamespace}, origSecret); err != nil {
 		return controllerutil.OperationResultNone, err

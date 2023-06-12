@@ -19,11 +19,11 @@ import (
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get
 //+kubebuilder:rbac:groups=config.openshift.io,resources=apiservers,verbs=patch;get
 
-func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	var origSecretName string
 	var origSecretNamespace string
-	if relocation.Spec.ApiCertRef == nil {
-		// If they haven't specified an ApiCertRef, we generate a self-signed certificate for them
+	if relocation.Spec.APICertRef == nil {
+		// If they haven't specified an APICertRef, we generate a self-signed certificate for them
 		origSecretName = "generated-api-secret"
 		origSecretNamespace = rhsysenggithubiov1beta1.ConfigNamespace
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
@@ -66,11 +66,11 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 			logger.Info("Self-signed API TLS cert modified", "OperationResult", op)
 		}
 	} else {
-		if relocation.Spec.ApiCertRef.Name == "" || relocation.Spec.ApiCertRef.Namespace == "" {
+		if relocation.Spec.APICertRef.Name == "" || relocation.Spec.APICertRef.Namespace == "" {
 			return fmt.Errorf("must specify secret name and namespace")
 		}
-		origSecretName = relocation.Spec.ApiCertRef.Name
-		origSecretNamespace = relocation.Spec.ApiCertRef.Namespace
+		origSecretName = relocation.Spec.APICertRef.Name
+		origSecretNamespace = relocation.Spec.APICertRef.Namespace
 		logger.Info("Using user provided API certificate", "namespace", origSecretNamespace, "name", origSecretName)
 
 		// The certificate must be in the openshift-config namespace
@@ -117,7 +117,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	return nil
 }
 
-func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
+func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 	// We modified the APIServer resource, but we don't own it
 	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
 	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
