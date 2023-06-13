@@ -241,7 +241,7 @@ func resetRoutes(ctx context.Context, c client.Client, domainName string, logger
 					if err := c.Delete(ctx, &v); err != nil {
 						return err
 					}
-					logger.Info("Deleted Route so that it can be re-created with new domain", "Route", v.Name, "namespace", v.Namespace)
+					logger.Info("Deleted Route so that it can be re-created with new domain", "Route", v.Name, "Host", w.Host, "namespace", v.Namespace)
 				}
 			}
 		}
