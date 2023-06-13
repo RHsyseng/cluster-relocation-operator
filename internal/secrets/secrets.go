@@ -27,6 +27,8 @@ type SecretCopySettings struct {
 	DestinationOwnedByController bool
 }
 
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;create;update
+
 func GetCertCommonName(TLSCertKey []byte) (string, error) {
 	block, _ := pem.Decode(TLSCertKey)
 	if block == nil {

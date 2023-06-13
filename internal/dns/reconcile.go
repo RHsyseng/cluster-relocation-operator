@@ -33,6 +33,9 @@ type MachineConfigData struct {
 	Storage  MachineConfigStorageData `json:"storage"`
 }
 
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=list
+//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get
+
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	nodes := &corev1.NodeList{}
 	if err := c.List(ctx, nodes); err != nil {

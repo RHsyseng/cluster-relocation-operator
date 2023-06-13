@@ -14,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;delete
+
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if relocation.Spec.PullSecretRef.Name == "" {
 		// run Cleanup function in case they are moving from PullSecretRef=<something> to PullSecretRef=<empty>
