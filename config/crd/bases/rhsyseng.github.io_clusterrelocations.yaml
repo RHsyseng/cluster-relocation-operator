@@ -36,7 +36,7 @@ spec:
             description: ClusterRelocationSpec defines the desired state of ClusterRelocation
             properties:
               apiCertRef:
-                description: ApiCertRef is a reference to a TLS secret that will be
+                description: APICertRef is a reference to a TLS secret that will be
                   used for the API server. If it is omitted, a self-signed certificate
                   will be generated.
                 properties:

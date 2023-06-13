@@ -17,7 +17,7 @@ import (
 
 type MachineConfigUsersData struct {
 	Name              string   `json:"name"`
-	SshAuthorizedKeys []string `json:"sshAuthorizedKeys"`
+	SSHAuthorizedKeys []string `json:"sshAuthorizedKeys"`
 }
 
 type MachineConfigPasswdData struct {
@@ -31,9 +31,9 @@ type MachineConfigData struct {
 
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get;delete
 
-func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if relocation.Spec.SSHKeys == nil {
-		return Cleanup(c, ctx, logger)
+		return Cleanup(ctx, c, logger)
 	}
 
 	for _, v := range []string{"master", "worker"} {
@@ -46,7 +46,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 					Users: []MachineConfigUsersData{
 						{
 							Name:              "core",
-							SshAuthorizedKeys: *relocation.Spec.SSHKeys,
+							SSHAuthorizedKeys: *relocation.Spec.SSHKeys,
 						},
 					},
 				},
@@ -70,7 +70,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	return nil
 }
 
-func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
+func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 	// if they move from relocation.Spec.SSHKeys=<something> to relocation.Spec.SSHKeys=<empty>, we need to delete the MachineConfigs
 	for _, v := range []string{"master", "worker"} {
 		machineConfig := &machineconfigurationv1.MachineConfig{ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("core-ssh-key-%s", v)}}

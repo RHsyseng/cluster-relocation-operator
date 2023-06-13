@@ -19,9 +19,9 @@ import (
 
 const ConfigMapName = "generated-registry-cert"
 
-func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if relocation.Spec.RegistryCert == nil {
-		return Cleanup(c, ctx, logger)
+		return Cleanup(ctx, c, logger)
 	}
 
 	configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: ConfigMapName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}}
@@ -57,7 +57,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	return nil
 }
 
-func Cleanup(c client.Client, ctx context.Context, logger logr.Logger) error {
+func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 	// if they move from relocation.Spec.RegistryCert.Certificate=<something> to relocation.Spec.RegistryCert.Certificate=<empty>
 	// we need to clear out the AdditionalTrustedCA
 	imageConfig := &configv1.Image{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}

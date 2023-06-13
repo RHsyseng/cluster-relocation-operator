@@ -20,35 +20,34 @@ import (
 
 const ImageSetName = "mirror-ocp"
 
-func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger, clusterVersion string) error {
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger, clusterVersion string) error {
 	if relocation.Spec.ImageDigestMirrors == nil {
-		return Cleanup(c, ctx, logger, clusterVersion)
+		return Cleanup(ctx, c, logger, clusterVersion)
 	}
 
 	if semver.Compare(clusterVersion, "v4.13.0") == -1 {
-		return createICSP(c, scheme, ctx, relocation, logger)
-	} else {
-		// In case we are upgrading from 4.12 to 4.13+, remove any old ImageContentSourcePolicy
-		if err := cleanupICSP(c, ctx, logger); err != nil {
-			return err
-		}
-		return createIDMS(c, scheme, ctx, relocation, logger)
+		return createICSP(ctx, c, scheme, relocation, logger)
 	}
+
+	// In case we are upgrading from 4.12 to 4.13+, remove any old ImageContentSourcePolicy
+	if err := cleanupICSP(ctx, c, logger); err != nil {
+		return err
+	}
+	return createIDMS(ctx, c, scheme, relocation, logger)
 }
 
-func Cleanup(c client.Client, ctx context.Context, logger logr.Logger, clusterVersion string) error {
+func Cleanup(ctx context.Context, c client.Client, logger logr.Logger, clusterVersion string) error {
 	// if they move from relocation.Spec.ImageDigestMirrors=<something> to relocation.Spec.ImageDigestMirrors=<empty>, we need to delete the ICSP
 	if semver.Compare(clusterVersion, "v4.13.0") == -1 {
-		return cleanupICSP(c, ctx, logger)
-	} else {
-		return cleanupIDMS(c, ctx, logger)
+		return cleanupICSP(ctx, c, logger)
 	}
+	return cleanupIDMS(ctx, c, logger)
 }
 
 // ImageContentSourcePolicy is deprecated since OCP 4.13
 // This function converts the values in Spec.RepositoryDigestMirrors into an ImageContentSourcePolicy
 // Used for OCP < 4.13
-func createICSP(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func createICSP(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	icsp := &operatorv1alpha1.ImageContentSourcePolicy{ObjectMeta: metav1.ObjectMeta{Name: ImageSetName}}
 	op, err := controllerutil.CreateOrUpdate(ctx, c, icsp, func() error {
 		icsp.Spec.RepositoryDigestMirrors = []operatorv1alpha1.RepositoryDigestMirrors{}
@@ -75,7 +74,7 @@ func createICSP(c client.Client, scheme *runtime.Scheme, ctx context.Context, re
 	return nil
 }
 
-func createIDMS(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func createIDMS(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	idms := &configv1.ImageDigestMirrorSet{ObjectMeta: metav1.ObjectMeta{Name: ImageSetName}}
 	op, err := controllerutil.CreateOrUpdate(ctx, c, idms, func() error {
 		idms.Spec.ImageDigestMirrors = *relocation.Spec.ImageDigestMirrors
@@ -92,7 +91,7 @@ func createIDMS(c client.Client, scheme *runtime.Scheme, ctx context.Context, re
 	return nil
 }
 
-func cleanupICSP(c client.Client, ctx context.Context, logger logr.Logger) error {
+func cleanupICSP(ctx context.Context, c client.Client, logger logr.Logger) error {
 	icsp := &operatorv1alpha1.ImageContentSourcePolicy{ObjectMeta: metav1.ObjectMeta{Name: ImageSetName}}
 	if err := c.Delete(ctx, icsp); err != nil {
 		if !errors.IsNotFound(err) {
@@ -104,7 +103,7 @@ func cleanupICSP(c client.Client, ctx context.Context, logger logr.Logger) error
 	return nil
 }
 
-func cleanupIDMS(c client.Client, ctx context.Context, logger logr.Logger) error {
+func cleanupIDMS(ctx context.Context, c client.Client, logger logr.Logger) error {
 	idms := &configv1.ImageDigestMirrorSet{ObjectMeta: metav1.ObjectMeta{Name: ImageSetName}}
 	if err := c.Delete(ctx, idms); err != nil {
 		if !errors.IsNotFound(err) {

@@ -127,9 +127,8 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	if err := validateCR(relocation); err != nil {
 		logger.Error(err, "Could not validate ClusterRelocation")
 		return ctrl.Result{}, nil
-	} else {
-		logger.Info("validation succeeded")
 	}
+	logger.Info("validation succeeded")
 
 	clusterVersion := &configv1.ClusterVersion{}
 	if err := r.Client.Get(ctx, types.NamespacedName{Name: "version"}, clusterVersion); err != nil {
@@ -148,28 +147,27 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Applies a new certificate and domain alias to the API server
-	if err := reconcileApi.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := reconcileApi.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		apiCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
 			Message:            err.Error(),
-			Type:               rhsysenggithubiov1beta1.ConditionTypeApi,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeAPI,
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
 		return ctrl.Result{}, err
-	} else {
-		apiCondition := metav1.Condition{
-			Status:             metav1.ConditionTrue,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-			Type:               rhsysenggithubiov1beta1.ConditionTypeApi,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
 	}
+	apiCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypeAPI,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
 
 	// Applies a new certificate and domain alias to the Apps ingressesed
-	if err := reconcileIngress.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := reconcileIngress.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		ingressCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -179,18 +177,17 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
 		return ctrl.Result{}, err
-	} else {
-		ingressCondition := metav1.Condition{
-			Status:             metav1.ConditionTrue,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-			Type:               rhsysenggithubiov1beta1.ConditionTypeIngress,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
 	}
+	ingressCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypeIngress,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
 
 	// Apply a new cluster-wide pull secret
-	if err := reconcilePullSecret.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := reconcilePullSecret.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		pullSecretCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -200,39 +197,37 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
 		return ctrl.Result{}, err
-	} else {
-		pullSecretCondition := metav1.Condition{
-			Status:             metav1.ConditionTrue,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-			Type:               rhsysenggithubiov1beta1.ConditionTypePullSecret,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
 	}
+	pullSecretCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypePullSecret,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, pullSecretCondition)
 
 	// Applies a SSH key for the 'core' user
-	if err := reconcileSsh.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := reconcileSsh.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		sshCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
 			Message:            err.Error(),
-			Type:               rhsysenggithubiov1beta1.ConditionTypeSsh,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeSSH,
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, sshCondition)
 		return ctrl.Result{}, err
-	} else {
-		sshCondition := metav1.Condition{
-			Status:             metav1.ConditionTrue,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-			Type:               rhsysenggithubiov1beta1.ConditionTypeSsh,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, sshCondition)
 	}
+	sshCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypeSSH,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, sshCondition)
 
 	// Applies a new registry certificate
-	if err := registryCert.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := registryCert.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		registryCertCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -242,18 +237,17 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, registryCertCondition)
 		return ctrl.Result{}, err
-	} else {
-		registryCertCondition := metav1.Condition{
-			Status:             metav1.ConditionTrue,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-			Type:               rhsysenggithubiov1beta1.ConditionTypeRegistryCert,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, registryCertCondition)
 	}
+	registryCertCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypeRegistryCert,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, registryCertCondition)
 
 	// Applies new mirror configuration
-	if err := reconcileMirror.Reconcile(r.Client, r.Scheme, ctx, relocation, logger, clusterVersionString); err != nil {
+	if err := reconcileMirror.Reconcile(ctx, r.Client, r.Scheme, relocation, logger, clusterVersionString); err != nil {
 		mirrorCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -263,18 +257,17 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, mirrorCondition)
 		return ctrl.Result{}, err
-	} else {
-		mirrorCondition := metav1.Condition{
-			Status:             metav1.ConditionTrue,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-			Type:               rhsysenggithubiov1beta1.ConditionTypeMirror,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, mirrorCondition)
 	}
+	mirrorCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypeMirror,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, mirrorCondition)
 
 	// Applies new catalog sources
-	if err := reconcileCatalog.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := reconcileCatalog.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		catalogCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -284,36 +277,34 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, catalogCondition)
 		return ctrl.Result{}, err
-	} else {
-		catalogCondition := metav1.Condition{
-			Status:             metav1.ConditionTrue,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-			Type:               rhsysenggithubiov1beta1.ConditionTypeCatalog,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, catalogCondition)
 	}
+	catalogCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypeCatalog,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, catalogCondition)
 
 	// Adds new internal DNS records
-	if err := reconcileDns.Reconcile(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := reconcileDns.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		dnsCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
 			Message:            err.Error(),
-			Type:               rhsysenggithubiov1beta1.ConditionTypeDns,
+			Type:               rhsysenggithubiov1beta1.ConditionTypeDNS,
 			ObservedGeneration: relocation.GetGeneration(),
 		}
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, dnsCondition)
 		return ctrl.Result{}, err
-	} else {
-		dnsCondition := metav1.Condition{
-			Status:             metav1.ConditionTrue,
-			Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
-			Type:               rhsysenggithubiov1beta1.ConditionTypeDns,
-			ObservedGeneration: relocation.GetGeneration(),
-		}
-		apimeta.SetStatusCondition(&relocation.Status.Conditions, dnsCondition)
 	}
+	dnsCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Type:               rhsysenggithubiov1beta1.ConditionTypeDNS,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, dnsCondition)
 
 	return ctrl.Result{}, nil
 }
@@ -351,19 +342,19 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 }
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
-	if err := reconcileApi.Cleanup(r.Client, ctx, logger); err != nil {
+	if err := reconcileApi.Cleanup(ctx, r.Client, logger); err != nil {
 		return err
 	}
 
-	if err := reconcileIngress.Cleanup(r.Client, ctx, logger); err != nil {
+	if err := reconcileIngress.Cleanup(ctx, r.Client, logger); err != nil {
 		return err
 	}
 
-	if err := reconcilePullSecret.Cleanup(r.Client, r.Scheme, ctx, relocation, logger); err != nil {
+	if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		return err
 	}
 
-	if err := registryCert.Cleanup(r.Client, ctx, logger); err != nil {
+	if err := registryCert.Cleanup(ctx, r.Client, logger); err != nil {
 		return err
 	}
 

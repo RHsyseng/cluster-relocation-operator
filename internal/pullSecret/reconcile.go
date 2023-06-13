@@ -1,4 +1,4 @@
-package pullSecret
+package pullsecret
 
 import (
 	"context"
@@ -17,10 +17,10 @@ import (
 
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;delete
 
-func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if relocation.Spec.PullSecretRef == nil {
 		// run Cleanup function in case they are moving from PullSecretRef=<something> to PullSecretRef=<empty>
-		return Cleanup(c, scheme, ctx, relocation, logger)
+		return Cleanup(ctx, c, scheme, relocation, logger)
 	}
 
 	if relocation.Spec.PullSecretRef.Name == "" || relocation.Spec.PullSecretRef.Namespace == "" {
@@ -68,7 +68,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	return nil
 }
 
-func Cleanup(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Cleanup(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	// If we modified the original pull secret, we need to restore it
 	backupPullSecret := &corev1.Secret{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rhsysenggithubiov1beta1.BackupPullSecretName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, backupPullSecret); err != nil {
@@ -93,9 +93,8 @@ func Cleanup(c client.Client, scheme *runtime.Scheme, ctx context.Context, reloc
 		// we delete the backup so that if they ever move back to PullSecretRef=<something>, a fresh backup is taken
 		if err := c.Delete(ctx, backupPullSecret); err != nil {
 			return err
-		} else {
-			logger.Info("Deleted backup pull secret")
 		}
+		logger.Info("Deleted backup pull secret")
 	}
 	return nil
 }
