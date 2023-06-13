@@ -3,12 +3,14 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,6 +21,7 @@ import (
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get
 //+kubebuilder:rbac:groups=operator.openshift.io,resources=ingresscontrollers,verbs=patch;get
 //+kubebuilder:rbac:groups=config.openshift.io,resources=ingresses,verbs=patch;get
+//+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=list;delete
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	// Configure certificates with the new domain name for the ingress
@@ -178,6 +181,26 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		logger.Info("Ingress domain aliases modified", "OperationResult", op)
 	}
 
+	routes := &routev1.RouteList{}
+	if err := c.List(ctx, routes); err != nil {
+		return err
+	}
+	for _, v := range routes.Items {
+		if v.Namespace == "openshift-console" || v.Namespace == "openshift-authentication" {
+			continue
+		}
+		for _, w := range v.Status.Ingress {
+			if w.RouterName == "default" { // check Routes associated with the default Ingress Controller
+				// TODO: ensure that new domain is ready to go, or else the Route might be re-created with the old domain
+				if !strings.Contains(w.Host, relocation.Spec.Domain) { // hostname for this route needs to be updated
+					if err := c.Delete(ctx, &v); err != nil {
+						return err
+					}
+					logger.Info("Deleted Route so that it can be re-created with new domain", "Route", v.Name, "namespace", v.Namespace)
+				}
+			}
+		}
+	}
 	return nil
 }
 
