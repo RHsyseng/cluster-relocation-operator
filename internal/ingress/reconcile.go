@@ -13,7 +13,6 @@ import (
 	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -226,14 +225,14 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 }
 
 func resetRoutes(ctx context.Context, c client.Client, domainName string, logger logr.Logger) error {
-	listOptions := client.ListOptions{
-		FieldSelector: fields.ParseSelectorOrDie("metadata.namespace!=openshift-console,metadata.namespace!=openshift-authentication"),
-	}
 	routes := &routev1.RouteList{}
-	if err := c.List(ctx, routes, &listOptions); err != nil {
+	if err := c.List(ctx, routes); err != nil {
 		return err
 	}
 	for _, v := range routes.Items {
+		if v.Namespace == "openshift-console" || v.Namespace == "openshift-authentication" {
+			continue
+		}
 		for _, w := range v.Status.Ingress {
 			if w.RouterName == "default" { // check Routes associated with the default Ingress Controller
 				// TODO: ensure that new domain is ready to go, or else the Route might be re-created with the old domain
