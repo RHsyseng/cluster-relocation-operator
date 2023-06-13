@@ -125,6 +125,7 @@ const (
 	PullSecretName       string = "pull-secret"
 	BackupPullSecretName string = "backup-pull-secret"
 	ConfigNamespace      string = "openshift-config"
+	IngressNamespace     string = "openshift-ingress"
 )
 
 const (
