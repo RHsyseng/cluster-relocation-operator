@@ -21,7 +21,11 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 		return err
 	}
 
-	for _, v := range relocation.Spec.CatalogSources {
+	if relocation.Spec.CatalogSources == nil {
+		return nil
+	}
+
+	for _, v := range *relocation.Spec.CatalogSources {
 		catalogSource := &operatorhubv1alpha1.CatalogSource{ObjectMeta: metav1.ObjectMeta{Name: v.Name, Namespace: marketplaceNamespace}}
 		op, err := controllerutil.CreateOrUpdate(ctx, c, catalogSource, func() error {
 			catalogSource.Spec.Image = v.Image
@@ -50,9 +54,11 @@ func Cleanup(c client.Client, ctx context.Context, relocation *rhsysenggithubiov
 			v.ObjectMeta.OwnerReferences[0].APIVersion == relocation.APIVersion &&
 			v.ObjectMeta.OwnerReferences[0].Kind == relocation.Kind { // check if we own this CatalogSource
 			var existsInSpec bool
-			for _, w := range relocation.Spec.CatalogSources { // check if the current Spec wants this CatalogSource
-				if v.Name == w.Name {
-					existsInSpec = true
+			if relocation.Spec.CatalogSources != nil {
+				for _, w := range *relocation.Spec.CatalogSources { // check if the current Spec wants this CatalogSource
+					if v.Name == w.Name {
+						existsInSpec = true
+					}
 				}
 			}
 			if !existsInSpec {

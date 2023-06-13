@@ -25,7 +25,7 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 	// Configure certificates with the new domain name for the ingress
 	var origSecretName string
 	var origSecretNamespace string
-	if relocation.Spec.IngressCertRef.Name == "" {
+	if relocation.Spec.IngressCertRef == nil {
 		// If they haven't specified an IngressCertRef, we generate a self-signed certificate for them
 		origSecretName = "generated-ingress-secret"
 		origSecretNamespace = rhsysenggithubiov1beta1.IngressNamespace
@@ -84,6 +84,9 @@ func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, rel
 			logger.Info(fmt.Sprintf("Generated Ingress cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
 		}
 	} else {
+		if relocation.Spec.IngressCertRef.Name == "" || relocation.Spec.IngressCertRef.Namespace == "" {
+			return fmt.Errorf("must specify secret name and namespace")
+		}
 		origSecretName = relocation.Spec.IngressCertRef.Name
 		origSecretNamespace = relocation.Spec.IngressCertRef.Namespace
 		logger.Info("Using user provided Ingress certificate", "namespace", origSecretNamespace, "name", origSecretName)

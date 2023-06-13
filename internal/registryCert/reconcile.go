@@ -20,15 +20,15 @@ import (
 const ConfigMapName = "generated-registry-cert"
 
 func Reconcile(c client.Client, scheme *runtime.Scheme, ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
-	if relocation.Spec.RegistryCert.Certificate == "" {
+	if relocation.Spec.RegistryCert == nil {
 		return Cleanup(c, ctx, logger)
 	}
 
 	configMap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: ConfigMapName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}}
 	op, err := controllerutil.CreateOrUpdate(ctx, c, configMap, func() error {
 		var port string
-		if relocation.Spec.RegistryCert.RegistryPort != "" {
-			port = fmt.Sprintf("..%s", relocation.Spec.RegistryCert.RegistryPort)
+		if relocation.Spec.RegistryCert.RegistryPort != nil {
+			port = fmt.Sprintf("..%s", *relocation.Spec.RegistryCert.RegistryPort)
 		}
 		configMap.Data = map[string]string{
 			fmt.Sprintf("%s%s", relocation.Spec.RegistryCert.RegistryHostname, port): relocation.Spec.RegistryCert.Certificate,
