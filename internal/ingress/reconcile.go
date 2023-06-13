@@ -182,26 +182,10 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		logger.Info("Ingress domain aliases modified", "OperationResult", op)
 	}
 
-	listOptions := client.ListOptions{
-		FieldSelector: fields.ParseSelectorOrDie("metadata.namespace!=openshift-console,metadata.namespace!=openshift-authentication"),
-	}
-	routes := &routev1.RouteList{}
-	if err := c.List(ctx, routes, &listOptions); err != nil {
+	if err := resetRoutes(ctx, c, relocation.Spec.Domain, logger); err != nil {
 		return err
 	}
-	for _, v := range routes.Items {
-		for _, w := range v.Status.Ingress {
-			if w.RouterName == "default" { // check Routes associated with the default Ingress Controller
-				// TODO: ensure that new domain is ready to go, or else the Route might be re-created with the old domain
-				if !strings.Contains(w.Host, relocation.Spec.Domain) { // hostname for this route needs to be updated
-					if err := c.Delete(ctx, &v); err != nil {
-						return err
-					}
-					logger.Info("Deleted Route so that it can be re-created with new domain", "Route", v.Name, "namespace", v.Namespace)
-				}
-			}
-		}
-	}
+
 	return nil
 }
 
@@ -232,6 +216,35 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 	}
 	if op != controllerutil.OperationResultNone {
 		logger.Info("Ingress cluster reverted to original state", "OperationResult", op)
+	}
+
+	if err := resetRoutes(ctx, c, ingress.Spec.Domain, logger); err != nil { // reset routes to their original domain if needed
+		return err
+	}
+
+	return nil
+}
+
+func resetRoutes(ctx context.Context, c client.Client, domainName string, logger logr.Logger) error {
+	listOptions := client.ListOptions{
+		FieldSelector: fields.ParseSelectorOrDie("metadata.namespace!=openshift-console,metadata.namespace!=openshift-authentication"),
+	}
+	routes := &routev1.RouteList{}
+	if err := c.List(ctx, routes, &listOptions); err != nil {
+		return err
+	}
+	for _, v := range routes.Items {
+		for _, w := range v.Status.Ingress {
+			if w.RouterName == "default" { // check Routes associated with the default Ingress Controller
+				// TODO: ensure that new domain is ready to go, or else the Route might be re-created with the old domain
+				if !strings.Contains(w.Host, domainName) { // hostname for this route needs to be updated
+					if err := c.Delete(ctx, &v); err != nil {
+						return err
+					}
+					logger.Info("Deleted Route so that it can be re-created with new domain", "Route", v.Name, "namespace", v.Namespace)
+				}
+			}
+		}
 	}
 	return nil
 }
