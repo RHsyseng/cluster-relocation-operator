@@ -130,14 +130,6 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) (bool, er
 		return requeue, err
 	}
 
-	// if the master MCP still contains the DNS configuration, wait to revert the API configuration
-	// rebooting the node while the API server is in the middle of updating can put the API server in a permanently degraded state
-	for _, v := range machineConfigPool.Status.Configuration.Source {
-		if v.Name == "relocation-dns-master" {
-			requeue = true
-		}
-	}
-
 	// if the master MCP is updating, wait to revery the API configuration
 	// rebooting the node while the API server is in the middle of updating can put the API server in a permanently degraded state
 	for _, v := range machineConfigPool.Status.Conditions {
