@@ -317,6 +317,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 	apimeta.SetStatusCondition(&relocation.Status.Conditions, dnsCondition)
 
+	logger.Info("Reconcile complete")
 	return ctrl.Result{}, nil
 }
 
