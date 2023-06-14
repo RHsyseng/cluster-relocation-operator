@@ -112,22 +112,14 @@ func (in *ClusterRelocationSpec) DeepCopyInto(out *ClusterRelocationSpec) {
 	}
 	if in.CatalogSources != nil {
 		in, out := &in.CatalogSources, &out.CatalogSources
-		*out = new([]CatalogSource)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]CatalogSource, len(*in))
-			copy(*out, *in)
-		}
+		*out = make([]CatalogSource, len(*in))
+		copy(*out, *in)
 	}
 	if in.ImageDigestMirrors != nil {
 		in, out := &in.ImageDigestMirrors, &out.ImageDigestMirrors
-		*out = new([]configv1.ImageDigestMirrors)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]configv1.ImageDigestMirrors, len(*in))
-			for i := range *in {
-				(*in)[i].DeepCopyInto(&(*out)[i])
-			}
+		*out = make([]configv1.ImageDigestMirrors, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	if in.IngressCertRef != nil {
@@ -147,12 +139,8 @@ func (in *ClusterRelocationSpec) DeepCopyInto(out *ClusterRelocationSpec) {
 	}
 	if in.SSHKeys != nil {
 		in, out := &in.SSHKeys, &out.SSHKeys
-		*out = new([]string)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]string, len(*in))
-			copy(*out, *in)
-		}
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 }
 

@@ -46,7 +46,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 					Users: []MachineConfigUsersData{
 						{
 							Name:              "core",
-							SSHAuthorizedKeys: *relocation.Spec.SSHKeys,
+							SSHAuthorizedKeys: relocation.Spec.SSHKeys,
 						},
 					},
 				},

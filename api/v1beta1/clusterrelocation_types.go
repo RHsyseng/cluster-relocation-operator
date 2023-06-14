@@ -31,13 +31,13 @@ type ClusterRelocationSpec struct {
 	APICertRef *corev1.SecretReference `json:"apiCertRef,omitempty"`
 
 	// CatalogSources define new CatalogSources to install on the cluster.
-	CatalogSources *[]CatalogSource `json:"catalogSources,omitempty"`
+	CatalogSources []CatalogSource `json:"catalogSources,omitempty"`
 
 	// Domain defines the new base domain for the cluster.
 	Domain string `json:"domain"`
 
 	// ImageDigestMirrors is used to configured a mirror registry on the cluster.
-	ImageDigestMirrors *[]configv1.ImageDigestMirrors `json:"imageDigestMirrors,omitempty"`
+	ImageDigestMirrors []configv1.ImageDigestMirrors `json:"imageDigestMirrors,omitempty"`
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
 	// If it is omitted, a self-signed certificate will be generated.
@@ -53,7 +53,7 @@ type ClusterRelocationSpec struct {
 
 	// SSHKeys defines a list of authorized SSH keys for the 'core' user.
 	// If defined, it will be appended to the existing authorized SSH key(s).
-	SSHKeys *[]string `json:"sshKeys,omitempty"`
+	SSHKeys []string `json:"sshKeys,omitempty"`
 }
 
 // ClusterRelocationStatus defines the observed state of ClusterRelocation

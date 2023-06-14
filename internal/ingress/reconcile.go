@@ -3,12 +3,14 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,8 +21,9 @@ import (
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get
 //+kubebuilder:rbac:groups=operator.openshift.io,resources=ingresscontrollers,verbs=patch;get
 //+kubebuilder:rbac:groups=config.openshift.io,resources=ingresses,verbs=patch;get
+//+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=list;delete
 
-func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
+func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) (bool, error) {
 	// Configure certificates with the new domain name for the ingress
 	var origSecretName string
 	var origSecretNamespace string
@@ -62,7 +65,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 			return controllerutil.SetControllerReference(relocation, secret, scheme)
 		})
 		if err != nil {
-			return err
+			return false, err
 		}
 		if op != controllerutil.OperationResultNone {
 			logger.Info("Self-signed Ingress TLS cert modified", "OperationResult", op)
@@ -77,14 +80,14 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		}
 		op, err = secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if op != controllerutil.OperationResultNone {
 			logger.Info(fmt.Sprintf("Generated Ingress cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
 		}
 	} else {
 		if relocation.Spec.IngressCertRef.Name == "" || relocation.Spec.IngressCertRef.Namespace == "" {
-			return fmt.Errorf("must specify secret name and namespace")
+			return false, fmt.Errorf("must specify secret name and namespace")
 		}
 		origSecretName = relocation.Spec.IngressCertRef.Name
 		origSecretNamespace = relocation.Spec.IngressCertRef.Namespace
@@ -105,7 +108,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		}
 		op, err := secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.IngressNamespace, copySettings)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if op != controllerutil.OperationResultNone {
 			logger.Info(fmt.Sprintf("User provided Ingress cert copied to %s", rhsysenggithubiov1beta1.IngressNamespace), "OperationResult", op)
@@ -114,7 +117,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		// Copy the secret into the openshift-config namespace
 		op, err = secrets.CopySecret(ctx, c, relocation, scheme, origSecretName, origSecretNamespace, secretName, rhsysenggithubiov1beta1.ConfigNamespace, copySettings)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if op != controllerutil.OperationResultNone {
 			logger.Info(fmt.Sprintf("User provided Ingress cert copied to %s", rhsysenggithubiov1beta1.ConfigNamespace), "OperationResult", op)
@@ -132,7 +135,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		return nil
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if op != controllerutil.OperationResultNone {
@@ -141,7 +144,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 
 	ingress := &configv1.Ingress{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
 	op, err = controllerutil.CreateOrPatch(ctx, c, ingress, func() error {
-		ingress.Spec.AppsDomain = relocation.Spec.Domain
+		ingress.Spec.AppsDomain = fmt.Sprintf("apps.%s", relocation.Spec.Domain)
 		ingress.Spec.ComponentRoutes = []configv1.ComponentRouteSpec{
 			{
 				Hostname:  configv1.Hostname(fmt.Sprintf("console-openshift-console.apps.%s", relocation.Spec.Domain)),
@@ -171,19 +174,24 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		return err
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if op != controllerutil.OperationResultNone {
 		logger.Info("Ingress domain aliases modified", "OperationResult", op)
 	}
 
-	return nil
+	requeue, err := resetRoutes(ctx, c, fmt.Sprintf("apps.%s", relocation.Spec.Domain), logger)
+	if err != nil {
+		return false, err
+	}
+
+	return requeue, nil
 }
 
 // We modified the Ingress Controller and Ingress Cluster resources, but we don't own it
 // Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
-func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
+func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) (bool, error) {
 	namespace := "openshift-ingress-operator"
 	name := "default"
 	ingressController := &operatorv1.IngressController{ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace}}
@@ -192,7 +200,7 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 	if op != controllerutil.OperationResultNone {
 		logger.Info("Ingress Controller reverted to original state", "OperationResult", op)
@@ -204,10 +212,45 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 	if op != controllerutil.OperationResultNone {
 		logger.Info("Ingress cluster reverted to original state", "OperationResult", op)
 	}
-	return nil
+
+	requeue, err := resetRoutes(ctx, c, ingress.Spec.Domain, logger) // reset routes to their original domain if needed
+	if err != nil {
+		return false, err
+	}
+
+	return requeue, nil
+}
+
+func resetRoutes(ctx context.Context, c client.Client, domainName string, logger logr.Logger) (bool, error) {
+	requeue := false
+	routes := &routev1.RouteList{}
+	if err := c.List(ctx, routes); err != nil {
+		return requeue, err
+	}
+
+	for _, v := range routes.Items {
+		if v.Namespace == "openshift-console" || v.Namespace == "openshift-authentication" {
+			continue
+		}
+		for _, w := range v.Status.Ingress {
+			if w.RouterName == "default" { // check Routes associated with the default Ingress Controller
+				if !strings.Contains(w.Host, domainName) { // hostname for this route needs to be updated
+					if err := c.Delete(ctx, &v); err != nil {
+						return requeue, err
+					}
+					// if the Ingress hasn't updated yet, the Route may get re-created with the old domain again
+					// to deal with this situation, we requeue the reconciler to run again after a short period of time
+					// when it runs again, it will catch any Routes that are still using the old domain
+					requeue = true
+					logger.Info("Deleted Route so that it can be re-created with new domain", "Route", v.Name, "Host", w.Host, "namespace", v.Namespace)
+				}
+			}
+		}
+	}
+	return requeue, nil
 }

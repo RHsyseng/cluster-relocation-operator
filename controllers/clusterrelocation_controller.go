@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
@@ -34,6 +35,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
+	routev1 "github.com/openshift/api/route/v1"
 	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	operatorhubv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"golang.org/x/mod/semver"
@@ -96,8 +98,12 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			// Run finalization logic for relocationFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
-			if err := r.finalizeRelocation(ctx, logger, relocation); err != nil {
+			requeue, err := r.finalizeRelocation(ctx, logger, relocation)
+			if err != nil {
 				return ctrl.Result{}, err
+			}
+			if requeue {
+				return ctrl.Result{RequeueAfter: time.Second * 20}, nil
 			}
 
 			// Remove relocationFinalizer. Once all finalizers have been
@@ -167,7 +173,8 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	apimeta.SetStatusCondition(&relocation.Status.Conditions, apiCondition)
 
 	// Applies a new certificate and domain alias to the Apps ingressesed
-	if err := reconcileIngress.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+	requeue, err := reconcileIngress.Reconcile(ctx, r.Client, r.Scheme, relocation, logger)
+	if err != nil {
 		ingressCondition := metav1.Condition{
 			Status:             metav1.ConditionFalse,
 			Reason:             rhsysenggithubiov1beta1.ReconciliationFailedReason,
@@ -178,6 +185,10 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		apimeta.SetStatusCondition(&relocation.Status.Conditions, ingressCondition)
 		return ctrl.Result{}, err
 	}
+	if requeue {
+		return ctrl.Result{RequeueAfter: time.Second * 20}, nil
+	}
+
 	ingressCondition := metav1.Condition{
 		Status:             metav1.ConditionTrue,
 		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
@@ -341,25 +352,27 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 	}
 }
 
-func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
+func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) (bool, error) {
+	requeue := false
 	if err := reconcileApi.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
+		return requeue, err
 	}
 
-	if err := reconcileIngress.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
+	requeue, err := reconcileIngress.Cleanup(ctx, r.Client, logger)
+	if err != nil {
+		return requeue, err
 	}
 
 	if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		return err
+		return requeue, err
 	}
 
 	if err := registryCert.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
+		return requeue, err
 	}
 
 	logger.Info("Successfully finalized ClusterRelocation")
-	return nil
+	return requeue, nil
 }
 
 func (r *ClusterRelocationReconciler) installSchemes() error {
@@ -380,6 +393,10 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 	}
 
 	if err := operatorhubv1alpha1.AddToScheme(r.Scheme); err != nil { // Add operators.coreos.com/v1alpha1 to the scheme
+		return err
+	}
+
+	if err := routev1.Install(r.Scheme); err != nil { // Add route.openshift.io/v1 to the scheme
 		return err
 	}
 
