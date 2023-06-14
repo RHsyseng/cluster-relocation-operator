@@ -181,7 +181,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		logger.Info("Ingress domain aliases modified", "OperationResult", op)
 	}
 
-	if err := resetRoutes(ctx, c, relocation.Spec.Domain, logger); err != nil {
+	if err := resetRoutes(ctx, c, fmt.Sprintf("apps.%s", relocation.Spec.Domain), logger); err != nil {
 		return err
 	}
 
