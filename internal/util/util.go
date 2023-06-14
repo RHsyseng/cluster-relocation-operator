@@ -22,6 +22,7 @@ func WaitForAPIOperator(ctx context.Context, c client.Client, logger logr.Logger
 		coProgressing := true
 		for _, v := range co.Status.Conditions {
 			if v.Type == configv1.OperatorProgressing && v.Status == configv1.ConditionTrue {
+				logger.Info("Waiting for API server to stop progressing")
 				time.Sleep(time.Minute)
 			} else if v.Type == configv1.OperatorProgressing && v.Status == configv1.ConditionFalse {
 				coProgressing = false
