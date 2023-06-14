@@ -70,12 +70,6 @@ rules:
 - apiGroups:
   - machineconfiguration.openshift.io
   resources:
-  - machineconfigpools
-  verbs:
-  - get
-- apiGroups:
-  - machineconfiguration.openshift.io
-  resources:
   - machineconfigs
   verbs:
   - create

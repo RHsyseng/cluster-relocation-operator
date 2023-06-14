@@ -18,7 +18,6 @@ import (
 
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get
 //+kubebuilder:rbac:groups=config.openshift.io,resources=apiservers,verbs=patch;get
-//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigpools,verbs=get
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	var origSecretName string
