@@ -354,11 +354,13 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) (bool, error) {
 	requeue := false
-	if err := reconcileApi.Cleanup(ctx, r.Client, logger); err != nil {
+
+	requeue, err := reconcileApi.Cleanup(ctx, r.Client, logger)
+	if err != nil {
 		return requeue, err
 	}
 
-	requeue, err := reconcileIngress.Cleanup(ctx, r.Client, logger)
+	requeue, err = reconcileIngress.Cleanup(ctx, r.Client, logger)
 	if err != nil {
 		return requeue, err
 	}
