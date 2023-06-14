@@ -131,6 +131,7 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 		return err
 	}
 	if op != controllerutil.OperationResultNone {
+		logger.Info("Waiting for APIServer to update")
 		time.Sleep(time.Minute * 5) // wait for ClusterOperator to start progressing
 		// if we let the finalizer finish before the API server has updated, it will delete a MachineConfig and cause a reboot
 		// if the node reboots before the API server has updated, it can cause the API server to lock up on the next boot
