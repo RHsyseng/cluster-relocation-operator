@@ -51,7 +51,7 @@ func createICSP(ctx context.Context, c client.Client, scheme *runtime.Scheme, re
 	icsp := &operatorv1alpha1.ImageContentSourcePolicy{ObjectMeta: metav1.ObjectMeta{Name: ImageSetName}}
 	op, err := controllerutil.CreateOrUpdate(ctx, c, icsp, func() error {
 		icsp.Spec.RepositoryDigestMirrors = []operatorv1alpha1.RepositoryDigestMirrors{}
-		for _, v := range *relocation.Spec.ImageDigestMirrors {
+		for _, v := range relocation.Spec.ImageDigestMirrors {
 			mirrors := []string{}
 			for _, w := range v.Mirrors {
 				mirrors = append(mirrors, string(w))
@@ -77,7 +77,7 @@ func createICSP(ctx context.Context, c client.Client, scheme *runtime.Scheme, re
 func createIDMS(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	idms := &configv1.ImageDigestMirrorSet{ObjectMeta: metav1.ObjectMeta{Name: ImageSetName}}
 	op, err := controllerutil.CreateOrUpdate(ctx, c, idms, func() error {
-		idms.Spec.ImageDigestMirrors = *relocation.Spec.ImageDigestMirrors
+		idms.Spec.ImageDigestMirrors = relocation.Spec.ImageDigestMirrors
 
 		// Set the controller as the owner so that the IDMS is deleted along with the CR
 		return controllerutil.SetControllerReference(relocation, idms, scheme)

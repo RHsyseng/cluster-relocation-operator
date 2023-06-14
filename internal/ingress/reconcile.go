@@ -144,7 +144,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 
 	ingress := &configv1.Ingress{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
 	op, err = controllerutil.CreateOrPatch(ctx, c, ingress, func() error {
-		ingress.Spec.AppsDomain = relocation.Spec.Domain
+		ingress.Spec.AppsDomain = fmt.Sprintf("apps.%s", relocation.Spec.Domain)
 		ingress.Spec.ComponentRoutes = []configv1.ComponentRouteSpec{
 			{
 				Hostname:  configv1.Hostname(fmt.Sprintf("console-openshift-console.apps.%s", relocation.Spec.Domain)),
