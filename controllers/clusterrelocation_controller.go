@@ -187,6 +187,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 	if requeue {
+		logger.Info("requeuing Reconcile")
 		return ctrl.Result{RequeueAfter: time.Second * 20}, nil
 	}
 
