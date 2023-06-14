@@ -354,6 +354,8 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 }
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) (bool, error) {
+	logger.Info("Starting finalizer")
+
 	if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		return false, err
 	}
