@@ -3,9 +3,11 @@ package api
 import (
 	"context"
 	"fmt"
+	"time"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
+	"github.com/RHsyseng/cluster-relocation-operator/internal/util"
 	"github.com/go-logr/logr"
 
 	configv1 "github.com/openshift/api/config/v1"
@@ -15,8 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
-
-const DisableAPICleanup = true
 
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get
 //+kubebuilder:rbac:groups=config.openshift.io,resources=apiservers,verbs=patch;get
@@ -120,14 +120,6 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 }
 
 func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
-	// reverting NamedCertificates to nil doesn't seem to work properly
-	// upon reboot, the API server hangs with the message:
-	// failed to load SNI cert and key: open /etc/kubernetes/static-pod-certs/secrets/user-serving-cert-000/tls.crt: no such file or directory"
-	//
-	// leaving the NamedCertificates populated with the old value is fairly harmless, since the API is still accessible via the original domain
-	if DisableAPICleanup {
-		return nil
-	}
 	// We modified the APIServer resource, but we don't own it
 	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
 	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
@@ -139,6 +131,12 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 		return err
 	}
 	if op != controllerutil.OperationResultNone {
+		time.Sleep(time.Minute * 5) // wait for ClusterOperator to start progressing
+		// if we let the finalizer finish before the API server has updated, it will delete a MachineConfig and cause a reboot
+		// if the node reboots before the API server has updated, it can cause the API server to lock up on the next boot
+		if err := util.WaitForAPIOperator(ctx, c, logger); err != nil {
+			return err
+		}
 		logger.Info("APIServer reverted to original state", "OperationResult", op)
 	}
 	return nil
