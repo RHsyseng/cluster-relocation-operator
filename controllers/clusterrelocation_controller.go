@@ -353,14 +353,16 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 }
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) (bool, error) {
-	requeue := false
-
 	if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		return requeue, err
+		return false, err
 	}
 
 	if err := registryCert.Cleanup(ctx, r.Client, logger); err != nil {
-		return requeue, err
+		return false, err
+	}
+
+	if err := reconcileApi.Cleanup(ctx, r.Client, logger); err != nil {
+		return false, err
 	}
 
 	requeue, err := reconcileIngress.Cleanup(ctx, r.Client, logger)
@@ -368,13 +370,8 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 		return requeue, err
 	}
 
-	requeue, err = reconcileApi.Cleanup(ctx, r.Client, logger)
-	if err != nil || requeue {
-		return requeue, err
-	}
-
 	logger.Info("Successfully finalized ClusterRelocation")
-	return requeue, nil
+	return false, nil
 }
 
 func (r *ClusterRelocationReconciler) installSchemes() error {

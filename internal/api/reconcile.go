@@ -7,13 +7,11 @@ import (
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
 	"github.com/go-logr/logr"
-	machineconfigurationv1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 
 	configv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -120,39 +118,19 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	return nil
 }
 
-func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) (bool, error) {
+func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 	// We modified the APIServer resource, but we don't own it
 	// Therefore, we need to use a finalizer to put it back the way we found it if the CR is deleted
-	requeue := false
-
-	machineConfigPool := &machineconfigurationv1.MachineConfigPool{}
-	if err := c.Get(ctx, types.NamespacedName{Name: "master"}, machineConfigPool); err != nil {
-		return requeue, err
-	}
-
-	// if the master MCP is updating, wait to revery the API configuration
-	// rebooting the node while the API server is in the middle of updating can put the API server in a permanently degraded state
-	for _, v := range machineConfigPool.Status.Conditions {
-		if v.Type == machineconfigurationv1.MachineConfigPoolUpdating && v.Status == corev1.ConditionTrue {
-			requeue = true
-		}
-	}
-
-	if requeue {
-		logger.Info("requeuing API cleanup until MachineConfigPool is settled")
-		return requeue, nil
-	}
-
 	apiServer := &configv1.APIServer{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
 	op, err := controllerutil.CreateOrPatch(ctx, c, apiServer, func() error {
 		apiServer.Spec.ServingCerts.NamedCertificates = nil
 		return nil
 	})
 	if err != nil {
-		return requeue, err
+		return err
 	}
 	if op != controllerutil.OperationResultNone {
 		logger.Info("APIServer reverted to original state", "OperationResult", op)
 	}
-	return requeue, nil
+	return nil
 }
