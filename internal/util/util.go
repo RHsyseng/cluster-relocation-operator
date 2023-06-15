@@ -52,7 +52,7 @@ func waitProgressing(ctx context.Context, c client.Client, logger logr.Logger, o
 			break
 		}
 		// we set a 5 minute timeout in case the operator never gets to Progressing
-		if time.Since(startTime) > time.Minute*5 {
+		if time.Since(startTime) > time.Minute*5 && desired == configv1.ConditionTrue {
 			break
 		}
 	}
