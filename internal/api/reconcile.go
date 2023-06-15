@@ -17,8 +17,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get
-//+kubebuilder:rbac:groups=config.openshift.io,resources=apiservers,verbs=patch;get
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get;list;watch
+//+kubebuilder:rbac:groups=config.openshift.io,resources=apiservers,verbs=patch;get;list;watch
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	var origSecretName string

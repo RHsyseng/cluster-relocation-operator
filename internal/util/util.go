@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//+kubebuilder:rbac:groups=config.openshift.io,resources=clusteroperators,verbs=get
+//+kubebuilder:rbac:groups=config.openshift.io,resources=clusteroperators,verbs=get;list;watch
 
 // Waits for the operator to update before returning
 func WaitForCO(ctx context.Context, c client.Client, logger logr.Logger, operator string) error {

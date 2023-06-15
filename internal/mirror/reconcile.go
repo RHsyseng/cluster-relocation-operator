@@ -15,8 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups=operator.openshift.io,resources=imagecontentsourcepolicies,verbs=create;update;get;delete
-//+kubebuilder:rbac:groups=config.openshift.io,resources=imagedigestmirrorsets,verbs=create;update;get;delete
+//+kubebuilder:rbac:groups=operator.openshift.io,resources=imagecontentsourcepolicies,verbs=create;update;get;delete;list;watch
+//+kubebuilder:rbac:groups=config.openshift.io,resources=imagedigestmirrorsets,verbs=create;update;get;delete;list;watch
 
 const ImageSetName = "mirror-ocp"
 

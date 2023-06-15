@@ -69,7 +69,7 @@ const relocationFinalizer = "relocationfinalizer"
 
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=watch;list
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=watch;list
-//+kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=get
+//+kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=get;watch;list
 //+kubebuilder:rbac:groups=config.openshift.io,resources=imagedigestmirrorsets,verbs=watch;list
 //+kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=watch;list
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=watch;list

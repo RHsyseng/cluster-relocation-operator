@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=create;update;get;list;delete
+//+kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=create;update;get;list;delete;watch
 
 const marketplaceNamespace = "openshift-marketplace"
 

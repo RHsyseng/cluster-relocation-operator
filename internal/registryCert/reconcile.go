@@ -14,8 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=create;update;get
-//+kubebuilder:rbac:groups=config.openshift.io,resources=images,verbs=patch;get
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=create;update;get;list;watch
+//+kubebuilder:rbac:groups=config.openshift.io,resources=images,verbs=patch;get;list;watch
 
 const ConfigMapName = "generated-registry-cert"
 
