@@ -67,13 +67,13 @@ const relocationFinalizer = "relocationfinalizer"
 //+kubebuilder:rbac:groups=rhsyseng.github.io,resources=clusterrelocations/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=rhsyseng.github.io,resources=clusterrelocations/finalizers,verbs=update
 
-//+kubebuilder:rbac:groups="",resources=secrets,verbs=watch
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=watch
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=watch;list
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=watch;list
 //+kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=get
-//+kubebuilder:rbac:groups=config.openshift.io,resources=imagedigestmirrorsets,verbs=watch
-//+kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=watch
-//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=watch
-//+kubebuilder:rbac:groups=operator.openshift.io,resources=imagecontentsourcepolicies,verbs=watch
+//+kubebuilder:rbac:groups=config.openshift.io,resources=imagedigestmirrorsets,verbs=watch;list
+//+kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=watch;list
+//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=watch;list
+//+kubebuilder:rbac:groups=operator.openshift.io,resources=imagecontentsourcepolicies,verbs=watch;list
 
 func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
