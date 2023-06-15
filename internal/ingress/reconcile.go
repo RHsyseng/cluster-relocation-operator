@@ -22,7 +22,7 @@ import (
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get;list;watch
 //+kubebuilder:rbac:groups=operator.openshift.io,resources=ingresscontrollers,verbs=patch;get;list;watch
 //+kubebuilder:rbac:groups=config.openshift.io,resources=ingresses,verbs=patch;get;list;watch
-//+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=list;delete
+//+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=list;delete;watch
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	// Configure certificates with the new domain name for the ingress
