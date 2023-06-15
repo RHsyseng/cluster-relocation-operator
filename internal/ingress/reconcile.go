@@ -19,9 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get
-//+kubebuilder:rbac:groups=operator.openshift.io,resources=ingresscontrollers,verbs=patch;get
-//+kubebuilder:rbac:groups=config.openshift.io,resources=ingresses,verbs=patch;get
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=create;update;get;list;watch
+//+kubebuilder:rbac:groups=operator.openshift.io,resources=ingresscontrollers,verbs=patch;get;list;watch
+//+kubebuilder:rbac:groups=config.openshift.io,resources=ingresses,verbs=patch;get;list;watch
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=list;delete
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
@@ -186,9 +186,10 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 			return err
 		}
 		logger.Info("Ingress domain aliases modified", "OperationResult", op)
-		if err := resetRoutes(ctx, c, fmt.Sprintf("apps.%s", relocation.Spec.Domain), logger); err != nil {
-			return err
-		}
+	}
+
+	if err := resetRoutes(ctx, c, fmt.Sprintf("apps.%s", relocation.Spec.Domain), logger); err != nil {
+		return err
 	}
 
 	return nil
@@ -229,9 +230,11 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 			return err
 		}
 		logger.Info("Cluster Ingress reverted to original state", "OperationResult", op)
-		if err := resetRoutes(ctx, c, ingress.Spec.Domain, logger); err != nil { // reset routes to their original domain if needed
-			return err
-		}
+
+	}
+
+	if err := resetRoutes(ctx, c, ingress.Spec.Domain, logger); err != nil { // reset routes to their original domain if needed
+		return err
 	}
 
 	return nil

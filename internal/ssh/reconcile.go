@@ -29,7 +29,7 @@ type MachineConfigData struct {
 	Passwd   MachineConfigPasswdData `json:"passwd"`
 }
 
-//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get;delete
+//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get;delete;list;watch
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if relocation.Spec.SSHKeys == nil {

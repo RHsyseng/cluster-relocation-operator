@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;delete
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;delete;list;watch
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	if relocation.Spec.PullSecretRef == nil {

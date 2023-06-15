@@ -34,7 +34,7 @@ type MachineConfigData struct {
 }
 
 //+kubebuilder:rbac:groups="",resources=nodes,verbs=list
-//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get
+//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get;list;watch
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	nodes := &corev1.NodeList{}
