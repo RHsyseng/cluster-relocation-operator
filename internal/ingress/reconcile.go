@@ -140,7 +140,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	}
 
 	if op != controllerutil.OperationResultNone {
-		if err := util.WaitForCO(ctx, c, logger, "ingress"); err != nil {
+		if err := util.WaitForCO(ctx, c, logger, "ingress", true); err != nil {
 			return err
 		}
 		logger.Info("IngressController modified", "OperationResult", op)
@@ -182,7 +182,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	}
 
 	if op != controllerutil.OperationResultNone {
-		if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver"); err != nil {
+		if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver", true); err != nil {
 			return err
 		}
 		logger.Info("Ingress domain aliases modified", "OperationResult", op)
@@ -209,7 +209,7 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 		return err
 	}
 	if op != controllerutil.OperationResultNone {
-		if err := util.WaitForCO(ctx, c, logger, "ingress"); err != nil {
+		if err := util.WaitForCO(ctx, c, logger, "ingress", true); err != nil {
 			return err
 		}
 		logger.Info("Ingress Controller reverted to original state", "OperationResult", op)
@@ -226,7 +226,7 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 	if op != controllerutil.OperationResultNone {
 		// let the openshift-apiserver operator settle before deleting the Routes
 		// this ensures that the Routes get the proper domain when they are re-created
-		if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver"); err != nil {
+		if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver", true); err != nil {
 			return err
 		}
 		logger.Info("Cluster Ingress reverted to original state", "OperationResult", op)
@@ -241,6 +241,10 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 }
 
 func resetRoutes(ctx context.Context, c client.Client, domainName string, logger logr.Logger) error {
+	if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver", false); err != nil {
+		return err
+	}
+
 	routes := &routev1.RouteList{}
 	if err := c.List(ctx, routes); err != nil {
 		return err

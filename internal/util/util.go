@@ -14,25 +14,27 @@ import (
 //+kubebuilder:rbac:groups=config.openshift.io,resources=clusteroperators,verbs=get;list;watch
 
 // Waits for the operator to update before returning
-func WaitForCO(ctx context.Context, c client.Client, logger logr.Logger, operator string) error {
-	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be %s", operator, configv1.ConditionTrue))
-	if err := waitProgressing(ctx, c, logger, operator, configv1.ConditionTrue); err != nil {
+func WaitForCO(ctx context.Context, c client.Client, logger logr.Logger, operator string, waitProgressingTrue bool) error {
+	if waitProgressingTrue {
+		logger.Info(fmt.Sprintf("Waiting for %s Progressing to be %s", operator, configv1.ConditionTrue))
+		if err := waitStatus(ctx, c, logger, operator, configv1.OperatorProgressing, configv1.ConditionTrue); err != nil {
+			return err
+		}
+	}
+
+	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be %s", operator, configv1.ConditionFalse))
+	if err := waitStatus(ctx, c, logger, operator, configv1.OperatorProgressing, configv1.ConditionFalse); err != nil {
 		return err
 	}
-	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be %s", operator, configv1.ConditionFalse))
-	if err := waitProgressing(ctx, c, logger, operator, configv1.ConditionFalse); err != nil {
+
+	logger.Info(fmt.Sprintf("Waiting for %s Available to be %s", operator, configv1.ConditionTrue))
+	if err := waitStatus(ctx, c, logger, operator, configv1.OperatorAvailable, configv1.ConditionTrue); err != nil {
 		return err
 	}
 	return nil
 }
 
-func waitProgressing(ctx context.Context, c client.Client, logger logr.Logger, operator string, desired configv1.ConditionStatus) error {
-	var current configv1.ConditionStatus
-	if desired == configv1.ConditionTrue {
-		current = configv1.ConditionFalse
-	} else {
-		current = configv1.ConditionTrue
-	}
+func waitStatus(ctx context.Context, c client.Client, logger logr.Logger, operator string, statusType configv1.ClusterStatusConditionType, desired configv1.ConditionStatus) error {
 	startTime := time.Now()
 	for {
 		co := &configv1.ClusterOperator{}
@@ -41,10 +43,10 @@ func waitProgressing(ctx context.Context, c client.Client, logger logr.Logger, o
 		}
 		desiredStatus := false
 		for _, v := range co.Status.Conditions {
-			if v.Type == configv1.OperatorProgressing && v.Status == current {
-				logger.Info(fmt.Sprintf("Still waiting for %s Progressing to be %s", operator, desired))
+			if v.Type == statusType && v.Status != desired {
+				logger.Info(fmt.Sprintf("Still waiting for %s %s to be %s", operator, statusType, desired))
 				time.Sleep(time.Second * 10)
-			} else if v.Type == configv1.OperatorProgressing && v.Status == desired {
+			} else if v.Type == statusType && v.Status == desired {
 				desiredStatus = true
 			}
 		}
@@ -52,7 +54,7 @@ func waitProgressing(ctx context.Context, c client.Client, logger logr.Logger, o
 			break
 		}
 		// we set a 5 minute timeout in case the operator never gets to Progressing
-		if time.Since(startTime) > time.Minute*5 && desired == configv1.ConditionTrue {
+		if time.Since(startTime) > time.Minute*5 && statusType == configv1.OperatorProgressing && desired == configv1.ConditionTrue {
 			break
 		}
 	}
