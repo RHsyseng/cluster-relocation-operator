@@ -116,9 +116,6 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		if err := util.WaitForCO(ctx, c, logger, "kube-apiserver"); err != nil {
 			return err
 		}
-		if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver"); err != nil {
-			return err
-		}
 		logger.Info("APIServer modified", "OperationResult", op)
 	}
 	return nil
@@ -139,9 +136,6 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 		// if we let the finalizer finish before the API server has updated, it will delete a MachineConfig and cause a reboot
 		// if the node reboots before the API server has updated, it can cause the API server to lock up on the next boot
 		if err := util.WaitForCO(ctx, c, logger, "kube-apiserver"); err != nil {
-			return err
-		}
-		if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver"); err != nil {
 			return err
 		}
 		logger.Info("APIServer reverted to original state", "OperationResult", op)

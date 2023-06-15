@@ -202,6 +202,9 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 		return err
 	}
 	if op != controllerutil.OperationResultNone {
+		if err := util.WaitForCO(ctx, c, logger, "ingress"); err != nil {
+			return err
+		}
 		logger.Info("Ingress Controller reverted to original state", "OperationResult", op)
 	}
 	ingress := &configv1.Ingress{ObjectMeta: metav1.ObjectMeta{Name: "cluster"}}
@@ -214,22 +217,21 @@ func Cleanup(ctx context.Context, c client.Client, logger logr.Logger) error {
 		return err
 	}
 	if op != controllerutil.OperationResultNone {
-		if err := resetRoutes(ctx, c, ingress.Spec.Domain, logger); err != nil { // reset routes to their original domain if needed
+		// let the openshift-apiserver operator settle before deleting the Routes
+		// this ensures that the Routes get the proper domain when they are re-created
+		if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver"); err != nil {
 			return err
 		}
 		logger.Info("Cluster Ingress reverted to original state", "OperationResult", op)
+		if err := resetRoutes(ctx, c, ingress.Spec.Domain, logger); err != nil { // reset routes to their original domain if needed
+			return err
+		}
 	}
 
 	return nil
 }
 
 func resetRoutes(ctx context.Context, c client.Client, domainName string, logger logr.Logger) error {
-	// let the ingress operator settle before deleting the Routes
-	// this ensures that the Routes get the proper domain when they are re-created
-	if err := util.WaitForCO(ctx, c, logger, "ingress"); err != nil {
-		return err
-	}
-
 	routes := &routev1.RouteList{}
 	if err := c.List(ctx, routes); err != nil {
 		return err
