@@ -15,26 +15,23 @@ import (
 
 // Waits for the operator to update before returning
 func WaitForCO(ctx context.Context, c client.Client, logger logr.Logger, operator string) error {
-	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be True", operator))
-	if err := waitProgressing(ctx, c, logger, operator, true); err != nil {
+	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be %s", operator, configv1.ConditionTrue))
+	if err := waitProgressing(ctx, c, logger, operator, configv1.ConditionTrue); err != nil {
 		return err
 	}
-	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be False", operator))
-	if err := waitProgressing(ctx, c, logger, operator, false); err != nil {
+	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be %s", operator, configv1.ConditionFalse))
+	if err := waitProgressing(ctx, c, logger, operator, configv1.ConditionFalse); err != nil {
 		return err
 	}
 	return nil
 }
 
-func waitProgressing(ctx context.Context, c client.Client, logger logr.Logger, operator string, progressing bool) error {
+func waitProgressing(ctx context.Context, c client.Client, logger logr.Logger, operator string, desired configv1.ConditionStatus) error {
 	var current configv1.ConditionStatus
-	var desired configv1.ConditionStatus
-	if progressing {
+	if desired == configv1.ConditionTrue {
 		current = configv1.ConditionFalse
-		desired = configv1.ConditionTrue
 	} else {
 		current = configv1.ConditionTrue
-		desired = configv1.ConditionFalse
 	}
 	startTime := time.Now()
 	for {
