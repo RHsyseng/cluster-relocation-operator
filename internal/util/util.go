@@ -13,7 +13,7 @@ import (
 
 //+kubebuilder:rbac:groups=config.openshift.io,resources=clusteroperators,verbs=get
 
-// Waits for the API server to update before returning
+// Waits for the operator to update before returning
 func WaitForCO(ctx context.Context, c client.Client, logger logr.Logger, operator string) error {
 	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be True", operator))
 	if err := waitProgressing(ctx, c, logger, operator, true); err != nil {
@@ -46,7 +46,7 @@ func waitProgressing(ctx context.Context, c client.Client, logger logr.Logger, o
 		for _, v := range co.Status.Conditions {
 			if v.Type == configv1.OperatorProgressing && v.Status == current {
 				logger.Info(fmt.Sprintf("Still waiting for %s Progressing to be %s", operator, desired))
-				time.Sleep(time.Second * 30)
+				time.Sleep(time.Second * 10)
 			} else if v.Type == configv1.OperatorProgressing && v.Status == desired {
 				desiredStatus = true
 			}
