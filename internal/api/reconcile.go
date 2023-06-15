@@ -113,6 +113,9 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		return err
 	}
 	if op != controllerutil.OperationResultNone {
+		if err := util.WaitForCO(ctx, c, logger, "kube-apiserver"); err != nil {
+			return err
+		}
 		logger.Info("APIServer modified", "OperationResult", op)
 	}
 	return nil
