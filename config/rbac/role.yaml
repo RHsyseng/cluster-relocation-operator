@@ -12,6 +12,7 @@ rules:
   verbs:
   - create
   - get
+  - list
   - update
   - watch
 - apiGroups:
@@ -28,6 +29,7 @@ rules:
   - create
   - delete
   - get
+  - list
   - update
   - watch
 - apiGroups:
@@ -57,6 +59,7 @@ rules:
   - create
   - delete
   - get
+  - list
   - update
   - watch
 - apiGroups:
@@ -81,6 +84,7 @@ rules:
   - create
   - delete
   - get
+  - list
   - update
   - watch
 - apiGroups:
@@ -91,6 +95,7 @@ rules:
   - create
   - delete
   - get
+  - list
   - update
   - watch
 - apiGroups:
