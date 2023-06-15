@@ -140,6 +140,9 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	}
 
 	if op != controllerutil.OperationResultNone {
+		if err := util.WaitForCO(ctx, c, logger, "ingress"); err != nil {
+			return err
+		}
 		logger.Info("IngressController modified", "OperationResult", op)
 	}
 
@@ -179,6 +182,9 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	}
 
 	if op != controllerutil.OperationResultNone {
+		if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver"); err != nil {
+			return err
+		}
 		logger.Info("Ingress domain aliases modified", "OperationResult", op)
 		if err := resetRoutes(ctx, c, fmt.Sprintf("apps.%s", relocation.Spec.Domain), logger); err != nil {
 			return err
