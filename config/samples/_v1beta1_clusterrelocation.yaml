@@ -4,3 +4,19 @@ metadata:
   name: cluster
 spec:
   domain: your.new.domain.com
+  catalogSources:
+    - name: new-catalog-source
+      image: <mirror_url>:<mirror_port>/redhat/redhat-operator-index:v4.12
+  imageDigestMirrors:
+    - mirrors:
+        - <mirror_url>:<mirror_port>/lvms5
+      source: registry.redhat.io/lvms5
+  pullSecretRef:
+    name: my-new-pull-secret
+    namespace: my-namespace
+  registryCert:
+    registryHostname: <mirror_url>
+    registryPort: <mirror_port>
+    certificate: <new_registry_cert>
+  sshKeys:
+    - <new_ssh_key>

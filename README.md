@@ -1,48 +1,66 @@
 # cluster-relocation-operator
-// TODO(user): Add simple overview of use/purpose
-
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+This operator can assist in reconfiguring a cluster once it has been moved to a new location. It performs the following steps:
+
+* Update the API and Ingress domain aliases using a generated self-signed certificate, or using a user provided certificate.
+* Update the internal DNS records for the API and Ingress (SNO only).
+* (Optional) Update the cluster-wide pull secret.
+* (Optional) Add new SSH keys for the 'core' user.
+* (Optional) Add new CatalogSources.
+* (Optional) Add new ImageContentSoucePolicy/ImageDigestMirrorSets for mirroring.
+* (Optional) Add new trusted CA for a mirror registry.
+
+Applying the ClusterRelocation CR will cause the node(s) to reboot, since a MachineConfig is applied as part of the process.
 
 ## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
+You’ll need an OpenShift cluster to run against. The cluster must be v4.12 or higher.
 
-### Running on the cluster
-1. Install Instances of Custom Resources:
-
-```sh
-kubectl apply -f config/samples/
+### Installing on the cluster
 ```
-
-2. Build and push your image to the location specified by `IMG`:
-
-```sh
-make docker-build docker-push IMG=<some-registry>/cluster-relocation-operator:tag
+cat << EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: "cluster-relocation-operator"
+  namespace: "openshift-operators"
+spec:
+  channel: "stable"
+  installPlanApproval: "Automatic"
+  source: "community-operators"
+  sourceNamespace: "openshift-marketplace"
+  name: "cluster-relocation-operator"
+EOF
 ```
-
-3. Deploy the controller to the cluster with the image specified by `IMG`:
-
-```sh
-make deploy IMG=<some-registry>/cluster-relocation-operator:tag
+Once the operator is installed:
 ```
-
-### Uninstall CRDs
-To delete the CRDs from the cluster:
-
-```sh
-make uninstall
-```
-
-### Undeploy controller
-UnDeploy the controller from the cluster:
-
-```sh
-make undeploy
+cat << EOF | oc apply -f -
+apiVersion: rhsyseng.github.io/v1beta1
+kind: ClusterRelocation
+metadata:
+  name: cluster
+spec:
+  domain: your.new.domain.com
+  catalogSources:
+    - name: new-catalog-source
+      image: <mirror_url>:<mirror_port>/redhat/redhat-operator-index:v4.12
+  imageDigestMirrors:
+    - mirrors:
+        - <mirror_url>:<mirror_port>/lvms5
+      source: registry.redhat.io/lvms5
+  pullSecretRef:
+    name: my-new-pull-secret
+    namespace: my-namespace
+  registryCert:
+    registryHostname: <mirror_url>
+    registryPort: <mirror_port>
+    certificate: <new_registry_cert>
+  sshKeys:
+    - <new_ssh_key>
+EOF
 ```
 
 ## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
+This is a community project, feel free to open a PR and help out!
 
 ### How it works
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).

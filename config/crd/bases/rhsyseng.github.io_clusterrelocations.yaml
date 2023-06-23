@@ -171,9 +171,9 @@ spec:
                     description: RegistryHostname is the hostname of the new registry.
                     type: string
                   registryPort:
-                    description: RegistryPort is the port nubmer that the registry
+                    description: RegistryPort is the port number that the registry
                       is served on.
-                    type: string
+                    type: integer
                 required:
                 - certificate
                 - registryHostname

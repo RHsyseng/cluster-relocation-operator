@@ -102,8 +102,8 @@ type RegistryCert struct {
 	// RegistryHostname is the hostname of the new registry.
 	RegistryHostname string `json:"registryHostname"`
 
-	// RegistryPort is the port nubmer that the registry is served on.
-	RegistryPort *string `json:"registryPort,omitempty"`
+	// RegistryPort is the port number that the registry is served on.
+	RegistryPort *int `json:"registryPort,omitempty"`
 
 	// Certificate is the certificate for the trusted certificate authority associated with the registry.
 	Certificate string `json:"certificate"`

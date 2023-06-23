@@ -181,7 +181,7 @@ func (in *RegistryCert) DeepCopyInto(out *RegistryCert) {
 	*out = *in
 	if in.RegistryPort != nil {
 		in, out := &in.RegistryPort, &out.RegistryPort
-		*out = new(string)
+		*out = new(int)
 		**out = **in
 	}
 }

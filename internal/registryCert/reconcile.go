@@ -28,7 +28,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	op, err := controllerutil.CreateOrUpdate(ctx, c, configMap, func() error {
 		var port string
 		if relocation.Spec.RegistryCert.RegistryPort != nil {
-			port = fmt.Sprintf("..%s", *relocation.Spec.RegistryCert.RegistryPort)
+			port = fmt.Sprintf("..%d", *relocation.Spec.RegistryCert.RegistryPort)
 		}
 		configMap.Data = map[string]string{
 			fmt.Sprintf("%s%s", relocation.Spec.RegistryCert.RegistryHostname, port): relocation.Spec.RegistryCert.Certificate,
