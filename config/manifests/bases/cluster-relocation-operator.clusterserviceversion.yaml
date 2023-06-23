@@ -3,10 +3,12 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     alm-examples: "[]"
-    capabilities: Basic Install
+    capabilities: "Full Lifecycle"
+    categories: "Integration & Delivery"
     operators.openshift.io/infrastructure-features: '["disconnected"]'
   name: cluster-relocation-operator.v0.0.0
   namespace: placeholder
+  support: RHsyseng
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
@@ -45,5 +47,5 @@ spec:
   maturity: beta
   minKubeVersion: 1.25.0
   provider:
-    name: Cluster Relocation Operator
+    name: RHsyseng
   version: 0.0.0
