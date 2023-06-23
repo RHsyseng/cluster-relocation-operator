@@ -76,7 +76,7 @@ jobs:
           make bundle USE_IMAGE_DIGESTS=true
           echo -e "\n  # Annotations for catalog\n  com.redhat.openshift.versions: \"${{ env.SUPPORTED_OCP_VERSIONS }}\"" >> bundle/metadata/annotations.yaml
           echo -e "\n# Labels for catalog\nLABEL com.redhat.openshift.versions=\"${{ env.SUPPORTED_OCP_VERSIONS }}\"" >> bundle.Dockerfile
-          export CONTAINER_IMAGE=$(cat cluster-relocation-operator.clusterserviceversion.yaml | yq '.spec.relatedImages | map(select(.name == "manager")) | .[0].image')
+          export CONTAINER_IMAGE=$(cat bundle/manifests/cluster-relocation-operator.clusterserviceversion.yaml | yq '.spec.relatedImages | map(select(.name == "manager")) | .[0].image')
           yq -i e ".metadata.annotations.containerImage = \"${CONTAINER_IMAGE}\"" bundle/manifests/cluster-relocation-operator.clusterserviceversion.yaml
 
       - name: Build operator bundle
