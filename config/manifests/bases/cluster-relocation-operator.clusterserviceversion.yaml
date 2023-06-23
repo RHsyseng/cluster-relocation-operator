@@ -5,6 +5,7 @@ metadata:
     alm-examples: "[]"
     capabilities: "Full Lifecycle"
     categories: "Integration & Delivery"
+    repository: https://github.com/RHsyseng/cluster-relocation-operator
     operators.openshift.io/infrastructure-features: '["disconnected"]'
   name: cluster-relocation-operator.v0.0.0
   namespace: placeholder
@@ -38,7 +39,7 @@ spec:
     - relocation
   links:
     - name: Cluster Relocation Operator
-      url: https://rhsyseng.github.io
+      url: https://github.com/RHsyseng/cluster-relocation-operator
   maintainers:
     - email: lmcnaugh@redhat.com
       name: Logan McNaughton
