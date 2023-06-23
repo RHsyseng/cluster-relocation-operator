@@ -47,8 +47,8 @@ spec:
       image: <mirror_url>:<mirror_port>/redhat/redhat-operator-index:v4.12
   imageDigestMirrors:
     - mirrors:
-        - <mirror_url>:<mirror_port>/lvms5
-      source: registry.redhat.io/lvms5
+        - <mirror_url>:<mirror_port>/lvms4
+      source: registry.redhat.io/lvms4
   pullSecretRef:
     name: my-new-pull-secret
     namespace: my-namespace
