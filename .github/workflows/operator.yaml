@@ -51,6 +51,11 @@ jobs:
           password: ${{ secrets.QUAY_PASSWORD }}
           registry: quay.io
 
+      - name: install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
       - name: install operator-sdk
         run: |
           export OPERATOR_SDK_DL_URL=https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/operator-sdk/${{ env.OPERATOR_OCP_VERSION }}/operator-sdk-${{ env.OPERATOR_SDK_VERSION }}-ocp-linux-x86_64.tar.gz
@@ -71,6 +76,8 @@ jobs:
           make bundle USE_IMAGE_DIGESTS=true
           echo -e "\n  # Annotations for catalog\n  com.redhat.openshift.versions: \"${{ env.SUPPORTED_OCP_VERSIONS }}\"" >> bundle/metadata/annotations.yaml
           echo -e "\n# Labels for catalog\nLABEL com.redhat.openshift.versions=\"${{ env.SUPPORTED_OCP_VERSIONS }}\"" >> bundle.Dockerfile
+          export CONTAINER_IMAGE=$(cat cluster-relocation-operator.clusterserviceversion.yaml | yq '.spec.relatedImages | map(select(.name == "manager")) | .[0].image')
+          yq -i e ".metadata.annotations.containerImage = \"${CONTAINER_IMAGE}\"" bundle/manifests/cluster-relocation-operator.clusterserviceversion.yaml
 
       - name: Build operator bundle
         run: |

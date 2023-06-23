@@ -7,6 +7,7 @@ metadata:
     categories: "Integration & Delivery"
     repository: https://github.com/RHsyseng/cluster-relocation-operator
     operators.openshift.io/infrastructure-features: '["disconnected"]'
+    support: RHsyseng
   name: cluster-relocation-operator.v0.0.0
   namespace: placeholder
 spec:
