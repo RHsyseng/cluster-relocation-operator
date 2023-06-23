@@ -9,7 +9,6 @@ metadata:
     operators.openshift.io/infrastructure-features: '["disconnected"]'
   name: cluster-relocation-operator.v0.0.0
   namespace: placeholder
-  support: RHsyseng
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
