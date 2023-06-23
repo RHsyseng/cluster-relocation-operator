@@ -16,7 +16,7 @@ spec:
     namespace: my-namespace
   registryCert:
     registryHostname: <mirror_url>
-    registryPort: <mirror_port>
+    registryPort: 8443
     certificate: <new_registry_cert>
   sshKeys:
     - <new_ssh_key>
