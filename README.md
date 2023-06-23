@@ -1,4 +1,6 @@
 # cluster-relocation-operator
+:warning: **This is a community project, it is not supported by Red Hat in any way.** :warning:
+
 ## Description
 This operator can assist in reconfiguring a cluster once it has been moved to a new location. It performs the following steps:
 
