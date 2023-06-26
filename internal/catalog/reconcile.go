@@ -23,17 +23,19 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		return err
 	}
 
-	marketplaceNamespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: marketplaceNamespaceName}}
-	op, err := controllerutil.CreateOrPatch(ctx, c, marketplaceNamespace, func() error {
-		marketplaceNamespace.Annotations["workload.openshift.io/allowed"] = "management"
-		marketplaceNamespace.Labels["openshift.io/cluster-monitoring"] = "true"
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	if op != controllerutil.OperationResultNone {
-		logger.Info("Created Marketplace namespace", "Namespace", marketplaceNamespaceName, "OperationResult", op)
+	if relocation.Spec.CatalogSources != nil {
+		marketplaceNamespace := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: marketplaceNamespaceName}}
+		op, err := controllerutil.CreateOrPatch(ctx, c, marketplaceNamespace, func() error {
+			marketplaceNamespace.Annotations["workload.openshift.io/allowed"] = "management"
+			marketplaceNamespace.Labels["openshift.io/cluster-monitoring"] = "true"
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		if op != controllerutil.OperationResultNone {
+			logger.Info("Created Marketplace namespace", "Namespace", marketplaceNamespaceName, "OperationResult", op)
+		}
 	}
 
 	for _, v := range relocation.Spec.CatalogSources {
