@@ -110,15 +110,8 @@ type RegistryCert struct {
 }
 
 const (
-	ConditionTypeReady        string = "Ready"
-	ConditionTypeAPI          string = "APIReconciled"
-	ConditionTypeIngress      string = "IngressReconciled"
-	ConditionTypePullSecret   string = "PullSecretReconciled"
-	ConditionTypeSSH          string = "SSHKeyReconciled"
-	ConditionTypeRegistryCert string = "RegistryCertReconciled"
-	ConditionTypeMirror       string = "MirrorReconciled"
-	ConditionTypeDNS          string = "DNSReconciled"
-	ConditionTypeCatalog      string = "CatalogReconciled"
+	ConditionTypeReady      string = "Ready"
+	ConditionTypeReconciled string = "Reconciled"
 )
 
 const (
@@ -141,7 +134,14 @@ const (
 	// the resource has succeeded.
 	ReconciliationSucceededReason string = "ReconciliationSucceeded"
 
-	// ReconciliationFailedReason represents the fact that the validation of
-	// the resource has failed.
-	ReconciliationFailedReason string = "ReconciliationFailed"
+	APIReconciliationFailedReason        string = "APIReconciliationFailed"
+	IngressReconciliationFailedReason    string = "IngressReconciliationFailed"
+	PullSecretReconciliationFailedReason string = "PullSecretReconciliationFailed"
+	SSHReconciliationFailedReason        string = "SSHReconciliationFailed"
+	RegistryReconciliationFailedReason   string = "RegistryReconciliationFailed"
+	MirrorReconciliationFailedReason     string = "MirrorReconciliationFailed"
+	CatalogReconciliationFailedReason    string = "CatalogReconciliationFailed"
+	DNSReconciliationFailedReason        string = "DNSReconciliationFailed"
+	CleanupReconciliationFailedReason    string = "CleanupInProgress"
+	InProgressReconciliationFailedReason string = "ReconcileInProgress"
 )
