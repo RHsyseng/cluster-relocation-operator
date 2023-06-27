@@ -142,6 +142,5 @@ const (
 	MirrorReconciliationFailedReason     string = "MirrorReconciliationFailed"
 	CatalogReconciliationFailedReason    string = "CatalogReconciliationFailed"
 	DNSReconciliationFailedReason        string = "DNSReconciliationFailed"
-	CleanupReconciliationFailedReason    string = "CleanupInProgress"
 	InProgressReconciliationFailedReason string = "ReconcileInProgress"
 )

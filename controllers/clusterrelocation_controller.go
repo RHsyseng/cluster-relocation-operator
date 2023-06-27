@@ -149,56 +149,56 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	reconcileCondition := apimeta.FindStatusCondition(relocation.Status.Conditions, rhsysenggithubiov1beta1.ConditionTypeReconciled)
 	if reconcileCondition == nil || reconcileCondition.ObservedGeneration < relocation.GetGeneration() {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.InProgressReconciliationFailedReason, "reconcile in progress")
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.InProgressReconciliationFailedReason, "reconcile in progress")
 		// requeue so that the status is updated right away
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Applies a new certificate and domain alias to the API server
 	if err := reconcileApi.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.APIReconciliationFailedReason, err.Error())
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.APIReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	// Applies a new certificate and domain alias to the Apps ingressesed
 	if err := reconcileIngress.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.IngressReconciliationFailedReason, err.Error())
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.IngressReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	// Apply a new cluster-wide pull secret
 	if err := reconcilePullSecret.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.PullSecretReconciliationFailedReason, err.Error())
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.PullSecretReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	// Applies a SSH key for the 'core' user
 	if err := reconcileSsh.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.SSHReconciliationFailedReason, err.Error())
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.SSHReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	// Applies a new registry certificate
 	if err := registryCert.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.RegistryReconciliationFailedReason, err.Error())
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.RegistryReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	// Applies new mirror configuration
 	if err := reconcileMirror.Reconcile(ctx, r.Client, r.Scheme, relocation, logger, clusterVersionString); err != nil {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.MirrorReconciliationFailedReason, err.Error())
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.MirrorReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	// Applies new catalog sources
 	if err := reconcileCatalog.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.CatalogReconciliationFailedReason, err.Error())
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.CatalogReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
 	// Adds new internal DNS records
 	if err := reconcileDns.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.DNSReconciliationFailedReason, err.Error())
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.DNSReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
@@ -215,7 +215,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return ctrl.Result{}, nil
 }
 
-func (r *ClusterRelocationReconciler) setFailedStatus(ctx context.Context, relocation *rhsysenggithubiov1beta1.ClusterRelocation, reason string, message string) {
+func (r *ClusterRelocationReconciler) setFailedStatus(relocation *rhsysenggithubiov1beta1.ClusterRelocation, reason string, message string) {
 	failedCondition := metav1.Condition{
 		Status:             metav1.ConditionFalse,
 		Reason:             reason,
