@@ -147,7 +147,8 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		r.WatchingIDMS = true
 	}
 
-	if apimeta.FindStatusCondition(relocation.Status.Conditions, rhsysenggithubiov1beta1.ConditionTypeReconciled) == nil {
+	reconcileCondition := apimeta.FindStatusCondition(relocation.Status.Conditions, rhsysenggithubiov1beta1.ConditionTypeReconciled)
+	if reconcileCondition == nil || reconcileCondition.ObservedGeneration < relocation.GetGeneration() {
 		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.InProgressReconciliationFailedReason, "reconcile in progress")
 		// requeue so that the status is updated right away
 		return ctrl.Result{Requeue: true}, nil
