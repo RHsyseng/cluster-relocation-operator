@@ -149,7 +149,8 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if apimeta.FindStatusCondition(relocation.Status.Conditions, rhsysenggithubiov1beta1.ConditionTypeReconciled) == nil {
 		r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.InProgressReconciliationFailedReason, "reconcile in progress")
-		r.updateStatus(ctx, relocation, logger)
+		// requeue so that the status is updated right away
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Applies a new certificate and domain alias to the API server
@@ -200,6 +201,15 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	successCondition := metav1.Condition{
+		Status:             metav1.ConditionTrue,
+		Reason:             rhsysenggithubiov1beta1.ReconciliationSucceededReason,
+		Message:            "reconcile succeeded",
+		Type:               rhsysenggithubiov1beta1.ConditionTypeReconciled,
+		ObservedGeneration: relocation.GetGeneration(),
+	}
+	apimeta.SetStatusCondition(&relocation.Status.Conditions, successCondition)
+
 	logger.Info("Reconcile complete")
 	return ctrl.Result{}, nil
 }
@@ -249,9 +259,6 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
 	logger.Info("Starting finalizer")
-
-	r.setFailedStatus(ctx, relocation, rhsysenggithubiov1beta1.CleanupReconciliationFailedReason, "CR cleanup in progress")
-	r.updateStatus(ctx, relocation, logger)
 
 	if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		return err
