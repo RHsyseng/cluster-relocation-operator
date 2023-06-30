@@ -8,7 +8,7 @@ env:
 # Hooks to run before any build is run.
 before:
   hooks:
-    - go version | grep --quiet "go1\.15\.5" || echo "Go binary version must be 1.15.5"
+    - go version | grep --quiet "go1\.19\.9" || echo "Go binary version must be 1.19.9"
     - go mod download
 
 # Binary builds.
