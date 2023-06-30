@@ -1,5 +1,5 @@
 # cluster-relocation-operator
-![CI Status](https://github.com/danielchg/filesorganizer/actions/workflows/goreleaser.yaml/badge.svg)
+![CI Status](https://github.com/RHsyseng/cluster-relocation-operator/actions/workflows/operator.yaml/badge.svg)
 
 :warning: **This is a community project, it is not supported by Red Hat in any way.** :warning:
 
