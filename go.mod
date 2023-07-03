@@ -3,8 +3,8 @@ module github.com/RHsyseng/cluster-relocation-operator
 go 1.19
 
 require (
-	github.com/onsi/ginkgo/v2 v2.9.5
-	github.com/onsi/gomega v1.27.7
+	github.com/onsi/ginkgo/v2 v2.9.7
+	github.com/onsi/gomega v1.27.8
 	github.com/openshift/api v0.0.0-20230221095031-69130006bb23
 	github.com/openshift/machine-config-operator v0.0.1-0.20230526005055-5843b7a4b27f
 	github.com/operator-framework/api v0.17.6
