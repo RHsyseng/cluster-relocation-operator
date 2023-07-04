@@ -1,0 +1,51 @@
+name: Deploy OCP
+on:
+  workflow_dispatch:
+    inputs:
+      PLAN:
+        description: 'Plan Name'
+        required: true
+        default: ocp-test
+      EXTRAPARAMS:
+        description: 'Extra params'
+        default: ''
+      PULLSECRET:
+        description: 'Pull Secret'
+        required: false
+        default: /home/gh-action/openshift_pull.json
+      VERSION:
+        description: 'version'
+        required: false
+        default: stable
+      TAG:
+        description: 'tag'
+        required: false
+        default: "4.13"
+
+env:
+ HOME: /home/gh-action
+ PYTHONUNBUFFERED: true
+ PLAN: ${{github.event.inputs.PLAN}}
+ EXTRAPARAMS: ${{github.event.inputs.EXTRAPARAMS}}
+ PULLSECRET: ${{github.event.inputs.PULLSECRET}}
+ VERSION: ${{github.event.inputs.VERSION}}
+ TAG: ${{github.event.inputs.TAG}}
+
+jobs:
+    deploy-openshift:
+      runs-on: self-hosted
+      steps:
+       - uses: actions/checkout@v3
+      #  - run: git pull origin ${GITHUB_REF##*/}
+      #  - name: Install kcli
+      #    run: curl https://raw.githubusercontent.com/karmab/kcli/main/install.sh | bash
+       - name: Deploy Openshift
+         run: |
+          kcli create cluster openshift \
+            -P pull_secret=$PULLSECRET \
+            -P version=$VERSION \
+            -P ctlplanes=1 \
+            -P memory=32768 \
+            -P api_ip=192.168.122.252 \
+            -P tag="$TAG" \
+            $EXTRAPARAMS $PLAN --force
