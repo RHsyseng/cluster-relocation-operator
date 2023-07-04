@@ -10,7 +10,7 @@ require (
 	github.com/operator-framework/api v0.17.6
 	golang.org/x/mod v0.11.0
 	k8s.io/apimachinery v0.27.3
-	k8s.io/client-go v0.26.5
+	k8s.io/client-go v0.27.3
 	sigs.k8s.io/controller-runtime v0.14.6
 )
 
@@ -70,7 +70,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.26.5
+	k8s.io/api v0.27.3
 	k8s.io/apiextensions-apiserver v0.26.5 // indirect
 	k8s.io/component-base v0.26.5 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
