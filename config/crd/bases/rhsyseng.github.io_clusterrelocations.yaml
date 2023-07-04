@@ -35,6 +35,204 @@ spec:
           spec:
             description: ClusterRelocationSpec defines the desired state of ClusterRelocation
             properties:
+              acmRegistration:
+                description: ACMRegistration allows you to register this cluster to
+                  a remote ACM cluster.
+                properties:
+                  acmSecret:
+                    description: acmSecret is a secret reference with credentials
+                      for the ACM cluster. It must have a 'token' field. Optionally,
+                      it can have a 'ca.crt' field which provides the CA bundle for
+                      the ACM cluster. The secret is deleted once ACM registration
+                      succeeds.
+                    properties:
+                      name:
+                        description: name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  clusterName:
+                    description: ClusterName will be the name of the ManagedCluster
+                      in ACM.
+                    type: string
+                  klusterletAddonConfig:
+                    description: KlusterletAddonConfig is the klusterlet add-on configuration.
+                    properties:
+                      applicationManager:
+                        description: ApplicationManagerConfig defines the configurations
+                          of ApplicationManager addon agent.
+                        properties:
+                          enabled:
+                            description: Enabled is the flag to enable/disable the
+                              addon. default is false.
+                            type: boolean
+                          proxyPolicy:
+                            description: ProxyPolicy defines the policy to set proxy
+                              for each addon agent. default is Disabled. Disabled
+                              means that the addon agent pods do not configure the
+                              proxy env variables. OCPGlobalProxy means that the addon
+                              agent pods use the cluster-wide proxy config of OCP
+                              cluster provisioned by ACM. CustomProxy means that the
+                              addon agent pods use the ProxyConfig specified in KlusterletAddonConfig.
+                            enum:
+                            - Disabled
+                            - OCPGlobalProxy
+                            - CustomProxy
+                            type: string
+                        type: object
+                      certPolicyController:
+                        description: CertPolicyControllerConfig defines the configurations
+                          of CertPolicyController addon agent.
+                        properties:
+                          enabled:
+                            description: Enabled is the flag to enable/disable the
+                              addon. default is false.
+                            type: boolean
+                          proxyPolicy:
+                            description: ProxyPolicy defines the policy to set proxy
+                              for each addon agent. default is Disabled. Disabled
+                              means that the addon agent pods do not configure the
+                              proxy env variables. OCPGlobalProxy means that the addon
+                              agent pods use the cluster-wide proxy config of OCP
+                              cluster provisioned by ACM. CustomProxy means that the
+                              addon agent pods use the ProxyConfig specified in KlusterletAddonConfig.
+                            enum:
+                            - Disabled
+                            - OCPGlobalProxy
+                            - CustomProxy
+                            type: string
+                        type: object
+                      clusterLabels:
+                        additionalProperties:
+                          type: string
+                        description: DEPRECATED in release 2.4 and will be removed
+                          in the future since not used anymore.
+                        type: object
+                      clusterName:
+                        description: DEPRECATED in release 2.4 and will be removed
+                          in the future since not used anymore.
+                        minLength: 1
+                        type: string
+                      clusterNamespace:
+                        description: DEPRECATED in release 2.4 and will be removed
+                          in the future since not used anymore.
+                        minLength: 1
+                        type: string
+                      iamPolicyController:
+                        description: IAMPolicyControllerConfig defines the configurations
+                          of IamPolicyController addon agent.
+                        properties:
+                          enabled:
+                            description: Enabled is the flag to enable/disable the
+                              addon. default is false.
+                            type: boolean
+                          proxyPolicy:
+                            description: ProxyPolicy defines the policy to set proxy
+                              for each addon agent. default is Disabled. Disabled
+                              means that the addon agent pods do not configure the
+                              proxy env variables. OCPGlobalProxy means that the addon
+                              agent pods use the cluster-wide proxy config of OCP
+                              cluster provisioned by ACM. CustomProxy means that the
+                              addon agent pods use the ProxyConfig specified in KlusterletAddonConfig.
+                            enum:
+                            - Disabled
+                            - OCPGlobalProxy
+                            - CustomProxy
+                            type: string
+                        type: object
+                      policyController:
+                        description: PolicyController defines the configurations of
+                          PolicyController addon agent.
+                        properties:
+                          enabled:
+                            description: Enabled is the flag to enable/disable the
+                              addon. default is false.
+                            type: boolean
+                          proxyPolicy:
+                            description: ProxyPolicy defines the policy to set proxy
+                              for each addon agent. default is Disabled. Disabled
+                              means that the addon agent pods do not configure the
+                              proxy env variables. OCPGlobalProxy means that the addon
+                              agent pods use the cluster-wide proxy config of OCP
+                              cluster provisioned by ACM. CustomProxy means that the
+                              addon agent pods use the ProxyConfig specified in KlusterletAddonConfig.
+                            enum:
+                            - Disabled
+                            - OCPGlobalProxy
+                            - CustomProxy
+                            type: string
+                        type: object
+                      proxyConfig:
+                        description: ProxyConfig defines the cluster-wide proxy configuration
+                          of the OCP managed cluster.
+                        properties:
+                          httpProxy:
+                            description: HTTPProxy is the URL of the proxy for HTTP
+                              requests.  Empty means unset and will not result in
+                              an env var.
+                            type: string
+                          httpsProxy:
+                            description: HTTPSProxy is the URL of the proxy for HTTPS
+                              requests.  Empty means unset and will not result in
+                              an env var.
+                            type: string
+                          noProxy:
+                            description: NoProxy is a comma-separated list of hostnames
+                              and/or CIDRs for which the proxy should not be used.
+                              Empty means unset and will not result in an env var.
+                              The API Server of Hub cluster should be added here.
+                              And If you scale up workers that are not included in
+                              the network defined by the networking.machineNetwork[].cidr
+                              field from the installation configuration, you must
+                              add them to this list to prevent connection issues.
+                            type: string
+                        type: object
+                      searchCollector:
+                        description: SearchCollectorConfig defines the configurations
+                          of SearchCollector addon agent.
+                        properties:
+                          enabled:
+                            description: Enabled is the flag to enable/disable the
+                              addon. default is false.
+                            type: boolean
+                          proxyPolicy:
+                            description: ProxyPolicy defines the policy to set proxy
+                              for each addon agent. default is Disabled. Disabled
+                              means that the addon agent pods do not configure the
+                              proxy env variables. OCPGlobalProxy means that the addon
+                              agent pods use the cluster-wide proxy config of OCP
+                              cluster provisioned by ACM. CustomProxy means that the
+                              addon agent pods use the ProxyConfig specified in KlusterletAddonConfig.
+                            enum:
+                            - Disabled
+                            - OCPGlobalProxy
+                            - CustomProxy
+                            type: string
+                        type: object
+                      version:
+                        description: DEPRECATED in release 2.4 and will be removed
+                          in the future since not used anymore.
+                        type: string
+                    required:
+                    - applicationManager
+                    - certPolicyController
+                    - iamPolicyController
+                    - policyController
+                    - searchCollector
+                    type: object
+                  url:
+                    description: URL is the API URL of the ACM cluster.
+                    type: string
+                required:
+                - acmSecret
+                - clusterName
+                - url
+                type: object
               apiCertRef:
                 description: APICertRef is a reference to a TLS secret that will be
                   used for the API server. If it is omitted, a self-signed certificate

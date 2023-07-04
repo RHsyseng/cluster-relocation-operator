@@ -44,7 +44,24 @@ kind: ClusterRelocation
 metadata:
   name: cluster
 spec:
-  domain: your.new.domain.com
+  domain: sample.new.domain.com
+  acmRegistration:
+    url: https://api.hub.example.com:6443
+    clusterName: sample
+    acmSecret:
+      name: acm-secret
+      namespace: openshift-config
+    klusterletAddonConfig:
+      policyController:
+        enabled: true
+      applicationManager:
+        enabled: true
+      certPolicyController:
+        enabled: true
+      iamPolicyController:
+        enabled: true
+      searchCollector:
+        enabled: true
   catalogSources:
     - name: new-catalog-source
       image: <mirror_url>:<mirror_port>/redhat/redhat-operator-index:v4.12
