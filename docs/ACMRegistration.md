@@ -40,8 +40,15 @@ metadata:
   name: acm-registration-clusterrole
 rules:
 - apiGroups: ["cluster.open-cluster-management.io"]
+  resources: ["managedclustersets/join"]
+  resourceNames: ["default"]
+  verbs: ["create"]
+- apiGroups: ["cluster.open-cluster-management.io"]
   resources: ["managedclusters"]
   verbs: ["create"]
+- apiGroups: ["register.open-cluster-management.io"]
+  resources: ["managedclusters/accept"]
+  verbs: ["update"]
 - apiGroups: ["agent.open-cluster-management.io"]
   resources: ["klusterletaddonconfigs"]
   verbs: ["create"]
