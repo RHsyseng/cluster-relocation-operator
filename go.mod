@@ -8,7 +8,7 @@ require (
 	github.com/openshift/api v0.0.0-20230221095031-69130006bb23
 	github.com/openshift/machine-config-operator v0.0.1-0.20230526005055-5843b7a4b27f
 	github.com/operator-framework/api v0.17.6
-	golang.org/x/mod v0.11.0
+	golang.org/x/mod v0.12.0
 	k8s.io/apimachinery v0.26.6
 	k8s.io/client-go v0.26.6
 	sigs.k8s.io/controller-runtime v0.14.6
