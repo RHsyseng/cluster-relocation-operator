@@ -1,0 +1,21 @@
+name: Test
+on:
+  pull_request:
+
+env:
+  KUBECONFIG: "/home/gh-action/.kcli/clusters/ocp-test/auth/kubeconfig"
+
+jobs:
+  scorecard:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build bundle
+        run: make bundle
+      - name: Run scorecard tests
+        run: operator-sdk scorecard ./bundle -o xunit > scorecard-tests.xml
+      - uses: actions/upload-artifact@v2  # upload test results
+        if: success() || failure()        # run this step even if previous step failed
+        with:
+          name: test-results
+          path: scorecard-tests.xml
