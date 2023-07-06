@@ -33,32 +33,8 @@ The `acmSecret` Secret requires a `token` field under the `data` section of the 
 
 Run these commands on your ACM cluster:
 ```
-cat << EOF | oc apply -f -
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: acm-registration-clusterrole
-rules:
-- apiGroups: ["cluster.open-cluster-management.io"]
-  resources: ["managedclustersets/join"]
-  resourceNames: ["default"]
-  verbs: ["create"]
-- apiGroups: ["cluster.open-cluster-management.io"]
-  resources: ["managedclusters"]
-  verbs: ["create"]
-- apiGroups: ["register.open-cluster-management.io"]
-  resources: ["managedclusters/accept"]
-  verbs: ["update"]
-- apiGroups: ["agent.open-cluster-management.io"]
-  resources: ["klusterletaddonconfigs"]
-  verbs: ["create"]
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["get"]
-EOF
-
 oc create sa -n multicluster-engine acm-registration-sa
-oc adm policy add-cluster-role-to-user acm-registration-clusterrole -n multicluster-engine -z acm-registration-sa
+oc adm policy add-cluster-role-to-user open-cluster-management:managedclusterset:admin:default -n multicluster-engine -z acm-registration-sa
 
 TOKEN=$(oc create token -n multicluster-engine acm-registration-sa --duration=720h | base64 -w 0)
 BASE_DOMAIN=$(oc get dns cluster -o jsonpath='{.spec.baseDomain}')

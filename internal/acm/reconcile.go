@@ -102,7 +102,8 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	importSecret := &corev1.Secret{}
 	for {
 		if err := acmClient.Get(ctx, types.NamespacedName{Name: fmt.Sprintf("%s-import", relocation.Spec.ACMRegistration.ClusterName), Namespace: relocation.Spec.ACMRegistration.ClusterName}, importSecret); err != nil {
-			if errors.IsNotFound(err) {
+			// after the ManagedCluster is created, it can take some time for this secret and the RBAC roles to be created
+			if errors.IsNotFound(err) || errors.IsForbidden(err) {
 				time.Sleep(time.Second * 10)
 				continue
 			}
