@@ -135,7 +135,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		if err := r.Update(ctx, relocation); err != nil {
 			return ctrl.Result{}, err
 		}
-		logger.Info("Remove finalizer from CR")
+		logger.Info("Removed finalizer from CR")
 	}
 
 	defer r.updateStatus(ctx, relocation, logger)
