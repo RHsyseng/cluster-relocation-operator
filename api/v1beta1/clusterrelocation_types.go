@@ -77,7 +77,7 @@ type ClusterRelocationStatus struct {
 //+kubebuilder:resource:scope=Cluster
 
 // ClusterRelocation is the Schema for the clusterrelocations API
-// +operator-sdk:csv:customresourcedefinitions:resources={{Secret,v1,generated-api-secret},{Secret,v1,"generated-ingress-secret"}}
+// +operator-sdk:csv:customresourcedefinitions:resources={{Secret,v1,"generated-api-secret"},{Secret,v1,"generated-ingress-secret"}}
 type ClusterRelocation struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
