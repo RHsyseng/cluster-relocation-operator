@@ -225,6 +225,10 @@ spec:
                     - policyController
                     - searchCollector
                     type: object
+                  managedClusterSet:
+                    description: ManagedClusterSet is the ManagedClusterSet that the
+                      ManagedCluster will join. Defaults to 'default'.
+                    type: string
                   url:
                     description: URL is the API URL of the ACM cluster.
                     type: string

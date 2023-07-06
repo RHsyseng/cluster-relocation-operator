@@ -82,12 +82,18 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		return err
 	}
 
+	managedClusterSet := "default"
+	if relocation.Spec.ACMRegistration.ManagedClusterSet != nil {
+		managedClusterSet = *relocation.Spec.ACMRegistration.ManagedClusterSet
+	}
+
 	managedCluster := &clusterv1.ManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: relocation.Spec.ACMRegistration.ClusterName,
 			Labels: map[string]string{
 				"cloud":  "auto-detect",
 				"vendor": "auto-detect",
+				"cluster.open-cluster-management.io/clusterset": managedClusterSet,
 			},
 		},
 		Spec: clusterv1.ManagedClusterSpec{HubAcceptsClient: true},

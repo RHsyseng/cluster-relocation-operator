@@ -11,6 +11,7 @@ spec:
   acmRegistration:
     url: https://api.hub.example.com:6443
     clusterName: sample
+    managedClusterSet: default
     acmSecret:
       name: acm-secret
       namespace: openshift-config

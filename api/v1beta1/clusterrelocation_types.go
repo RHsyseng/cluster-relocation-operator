@@ -131,6 +131,9 @@ type ACMRegistration struct {
 	// ClusterName will be the name of the ManagedCluster in ACM.
 	ClusterName string `json:"clusterName"`
 
+	// ManagedClusterSet is the ManagedClusterSet that the ManagedCluster will join. Defaults to 'default'.
+	ManagedClusterSet *string `json:"managedClusterSet,omitempty"`
+
 	// acmSecret is a secret reference with credentials for the ACM cluster.
 	// It must have a 'token' field. Optionally, it can have a 'ca.crt' field
 	// which provides the CA bundle for the ACM cluster.
