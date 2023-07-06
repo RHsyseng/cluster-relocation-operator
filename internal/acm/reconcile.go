@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// these resources are created by the 'crds.yaml' and 'import.yaml' files that are provided by ACM
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;delete;get;list;watch
 //+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=create;get;list;watch
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=create
