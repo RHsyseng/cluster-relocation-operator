@@ -81,6 +81,23 @@ spec:
     - <new_ssh_key>
 EOF
 ```
+### Deleting the CR
+When you delete the ClusterRelocation CR, everything will be reverted back to its original state.
+
+If you would like to delete the CR, but keep the relocation configuration, you may add the `skip-finalizer: "true"` annotation:
+```
+apiVersion: rhsyseng.github.io/v1beta1
+kind: ClusterRelocation
+metadata:
+  name: cluster
+  annotations:
+    skip-finalizer: "true"
+```
+and then delete the CR like this:
+```
+oc delete clusterrelocation cluster --cascade=orphan
+```
+This will allow you to delete the CR (and the operator if desired), while keeping the new configuration.
 
 ## Contributing
 This is a community project, feel free to open a PR and help out!

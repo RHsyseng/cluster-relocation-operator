@@ -116,13 +116,26 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
+	skipFinalizer := false
+	val, ok := relocation.Annotations["skip-finalizer"]
+	if ok {
+		if val == "true" {
+			skipFinalizer = true
+		}
+	}
 	// Add finalizer for this CR
-	if !controllerutil.ContainsFinalizer(relocation, relocationFinalizer) {
+	if !skipFinalizer && !controllerutil.ContainsFinalizer(relocation, relocationFinalizer) {
 		controllerutil.AddFinalizer(relocation, relocationFinalizer)
 		if err := r.Update(ctx, relocation); err != nil {
 			return ctrl.Result{}, err
 		}
 		logger.Info("Added finalizer to CR")
+	} else if skipFinalizer && controllerutil.ContainsFinalizer(relocation, relocationFinalizer) {
+		controllerutil.RemoveFinalizer(relocation, relocationFinalizer)
+		if err := r.Update(ctx, relocation); err != nil {
+			return ctrl.Result{}, err
+		}
+		logger.Info("Remove finalizer from CR")
 	}
 
 	defer r.updateStatus(ctx, relocation, logger)
