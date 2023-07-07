@@ -97,7 +97,12 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 				"cluster.open-cluster-management.io/clusterset": managedClusterSet,
 			},
 		},
-		Spec: clusterv1.ManagedClusterSpec{HubAcceptsClient: true},
+		Spec: clusterv1.ManagedClusterSpec{
+			HubAcceptsClient: true,
+			ManagedClusterClientConfigs: []clusterv1.ClientConfig{
+				{URL: fmt.Sprintf("https://api.%s:6443", relocation.Spec.Domain)},
+			},
+		},
 	}
 	if err := acmClient.Create(ctx, managedCluster); err != nil {
 		if !errors.IsAlreadyExists(err) {
