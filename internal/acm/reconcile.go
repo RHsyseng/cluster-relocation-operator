@@ -25,15 +25,43 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// these resources are created by the 'crds.yaml' and 'import.yaml' files that are provided by ACM
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;delete;get;list;watch
-//+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=create;get;list;watch
+//+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=get;list;watch
+
+// these resources are created by the 'crds.yaml' file that is provided by ACM
+//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=create
+
+// these resources are created by the 'import.yaml' file that is provided by ACM
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=create
 //+kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=create
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=create
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=create
-//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=create
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=create
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=create
+//+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=create
+
+// these permissions are granted by the ClusterRoles created by import.yaml
+// since an object cannot grant permissions that it doesn't have, the operator needs these as well
+// ClusterRole/klusterlet
+//+kubebuilder:rbac:groups="",resources=secrets;configmaps;serviceaccounts,verbs=create;get;list;update;watch;patch;delete
+//+kubebuilder:rbac:groups=coordination.k8s.io,resources=leases,verbs=create;get;list;update;watch;patch
+//+kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=create;get;list;watch;delete
+//+kubebuilder:rbac:groups="",resources=nodes,verbs=get;list;watch
+//+kubebuilder:rbac:groups="";events.k8s.io,resources=events,verbs=create;patch;update
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=create;get;list;update;watch;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings;rolebindings,verbs=create;get;list;update;watch;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles;roles,verbs=create;get;list;update;watch;patch;delete;escalate;bind
+//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=create;get;list;update;watch;patch;delete
+//+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=get;list;watch;update;patch;delete
+//+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets/status,verbs=update;patch
+//+kubebuilder:rbac:groups=work.open-cluster-management.io,resources=appliedmanifestworks,verbs=list;update;patch
+
+// ClusterRole/klusterlet-bootstrap-kubeconfig
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;update
+
+// ClusterRole/open-cluster-management:klusterlet-admin-aggregate-clusterrole
+//+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=get;list;watch;create;update;patch;delete
 
 // returns nil if the Klusterlet is Available, error otherwise
 func checkKlusterlet(ctx context.Context, c client.Client, logger logr.Logger) error {
