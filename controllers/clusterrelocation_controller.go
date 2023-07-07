@@ -30,8 +30,8 @@ import (
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	registryCert "github.com/RHsyseng/cluster-relocation-operator/internal/registryCert"
 	reconcileSSH "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
-	clusterv1 "github.com/open-cluster-management/api/cluster/v1"
 	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
+	clusterv1 "open-cluster-management.io/api/cluster/v1"
 	operatorapiv1 "open-cluster-management.io/api/operator/v1"
 
 	"github.com/go-logr/logr"
