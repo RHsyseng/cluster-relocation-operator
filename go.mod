@@ -22,7 +22,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/stolostron/cluster-lifecycle-api v0.0.0-20220621134646-8b67f2e6afed // indirect
 	golang.org/x/tools v0.9.3 // indirect
-	open-cluster-management.io/api v0.8.0
+	open-cluster-management.io/api v0.11.0
 )
 
 require (
