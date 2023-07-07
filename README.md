@@ -14,6 +14,7 @@ This operator can assist in reconfiguring a cluster once it has been moved to a 
 * (Optional) Add new CatalogSources.
 * (Optional) Add new ImageContentSoucePolicy/ImageDigestMirrorSets for mirroring.
 * (Optional) Add new trusted CA for a mirror registry.
+* (Optional) Register the cluster to ACM.
 
 Applying the ClusterRelocation CR will cause the node(s) to reboot, since a MachineConfig is applied as part of the process.
 
