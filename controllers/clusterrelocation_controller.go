@@ -21,14 +21,18 @@ import (
 	"fmt"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
-	reconcileApi "github.com/RHsyseng/cluster-relocation-operator/internal/api"
+	reconcileACM "github.com/RHsyseng/cluster-relocation-operator/internal/acm"
+	reconcileAPI "github.com/RHsyseng/cluster-relocation-operator/internal/api"
 	reconcileCatalog "github.com/RHsyseng/cluster-relocation-operator/internal/catalog"
-	reconcileDns "github.com/RHsyseng/cluster-relocation-operator/internal/dns"
+	reconcileDNS "github.com/RHsyseng/cluster-relocation-operator/internal/dns"
 	reconcileIngress "github.com/RHsyseng/cluster-relocation-operator/internal/ingress"
 	reconcileMirror "github.com/RHsyseng/cluster-relocation-operator/internal/mirror"
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	registryCert "github.com/RHsyseng/cluster-relocation-operator/internal/registryCert"
-	reconcileSsh "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
+	reconcileSSH "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
+	clusterv1 "github.com/open-cluster-management/api/cluster/v1"
+	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
+	operatorapiv1 "open-cluster-management.io/api/operator/v1"
 
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
@@ -155,7 +159,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Applies a new certificate and domain alias to the API server
-	if err := reconcileApi.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+	if err := reconcileAPI.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.APIReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
@@ -173,7 +177,7 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Applies a SSH key for the 'core' user
-	if err := reconcileSsh.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+	if err := reconcileSSH.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.SSHReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
@@ -196,8 +200,14 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	// Registers to ACM
+	if err := reconcileACM.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.ACMReconciliationFailedReason, err.Error())
+		return ctrl.Result{}, err
+	}
+
 	// Adds new internal DNS records
-	if err := reconcileDns.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+	if err := reconcileDNS.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.DNSReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
@@ -273,7 +283,7 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 		return err
 	}
 
-	if err := reconcileApi.Cleanup(ctx, r.Client, logger); err != nil {
+	if err := reconcileAPI.Cleanup(ctx, r.Client, logger); err != nil {
 		return err
 	}
 
@@ -306,6 +316,17 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 		return err
 	}
 
+	if err := clusterv1.Install(r.Scheme); err != nil { // Add cluster.open-cluster-management.io/v1 to the scheme
+		return err
+	}
+
+	if err := agentv1.SchemeBuilder.AddToScheme(r.Scheme); err != nil { // Add agent.open-cluster-management.io/v1 to the scheme
+		return err
+	}
+
+	if err := operatorapiv1.Install(r.Scheme); err != nil { // Add operator.open-cluster-management.io/v1 to the scheme
+		return err
+	}
 	return nil
 }
 

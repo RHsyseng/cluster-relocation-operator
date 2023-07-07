@@ -251,7 +251,7 @@ func resetRoutes(ctx context.Context, c client.Client, domainName string, logger
 	}
 
 	for _, v := range routes.Items {
-		if v.Namespace == "openshift-console" || v.Namespace == "openshift-authentication" {
+		if v.Namespace == "openshift-console" || v.Namespace == "openshift-authentication" || v.Namespace == "open-cluster-management-agent-addon" {
 			continue
 		}
 		for _, w := range v.Status.Ingress {

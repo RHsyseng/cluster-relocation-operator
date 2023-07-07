@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	configv1 "github.com/openshift/api/config/v1"
+	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -26,12 +27,17 @@ import (
 type ClusterRelocationSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
+	// ACMRegistration allows you to register this cluster to a remote ACM cluster.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec
+	ACMRegistration *ACMRegistration `json:"acmRegistration,omitempty"`
+
 	// APICertRef is a reference to a TLS secret that will be used for the API server.
 	// If it is omitted, a self-signed certificate will be generated.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	APICertRef *corev1.SecretReference `json:"apiCertRef,omitempty"`
 
 	// CatalogSources define new CatalogSources to install on the cluster.
-	// +operator-sdk:csv:customresourcedefinitions:type=spec
+	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	CatalogSources []CatalogSource `json:"catalogSources,omitempty"`
 
 	// Domain defines the new base domain for the cluster.
@@ -118,6 +124,26 @@ type RegistryCert struct {
 	Certificate string `json:"certificate"`
 }
 
+type ACMRegistration struct {
+	// URL is the API URL of the ACM cluster.
+	URL string `json:"url"`
+
+	// ClusterName will be the name of the ManagedCluster in ACM.
+	ClusterName string `json:"clusterName"`
+
+	// ManagedClusterSet is the ManagedClusterSet that the ManagedCluster will join. Defaults to 'default'.
+	ManagedClusterSet *string `json:"managedClusterSet,omitempty"`
+
+	// acmSecret is a secret reference with credentials for the ACM cluster.
+	// It must have a 'token' field. Optionally, it can have a 'ca.crt' field
+	// which provides the CA bundle for the ACM cluster.
+	// The secret is deleted once ACM registration succeeds.
+	ACMSecret corev1.SecretReference `json:"acmSecret"`
+
+	// KlusterletAddonConfig is the klusterlet add-on configuration.
+	KlusterletAddonConfig *agentv1.KlusterletAddonConfigSpec `json:"klusterletAddonConfig,omitempty"`
+}
+
 const (
 	ConditionTypeReady      string = "Ready"
 	ConditionTypeReconciled string = "Reconciled"
@@ -151,5 +177,6 @@ const (
 	MirrorReconciliationFailedReason     string = "MirrorReconciliationFailed"
 	CatalogReconciliationFailedReason    string = "CatalogReconciliationFailed"
 	DNSReconciliationFailedReason        string = "DNSReconciliationFailed"
+	ACMReconciliationFailedReason        string = "ACMReconciliationFailed"
 	InProgressReconciliationFailedReason string = "ReconcileInProgress"
 )

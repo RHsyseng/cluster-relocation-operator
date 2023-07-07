@@ -5,9 +5,11 @@ go 1.19
 require (
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.8
+	github.com/open-cluster-management/api v0.0.0-20210527013639-a6845f2ebcb1
 	github.com/openshift/api v0.0.0-20230221095031-69130006bb23
 	github.com/openshift/machine-config-operator v0.0.1-0.20230526005055-5843b7a4b27f
 	github.com/operator-framework/api v0.17.6
+	github.com/stolostron/klusterlet-addon-controller v0.0.0-20230528112800-a466a2368df4
 	golang.org/x/mod v0.12.0
 	k8s.io/apimachinery v0.26.6
 	k8s.io/client-go v0.26.6
@@ -19,7 +21,9 @@ require (
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/stolostron/cluster-lifecycle-api v0.0.0-20220621134646-8b67f2e6afed // indirect
 	golang.org/x/tools v0.9.3 // indirect
+	open-cluster-management.io/api v0.8.0
 )
 
 require (
