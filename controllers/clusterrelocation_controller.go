@@ -280,23 +280,22 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 
 	if r.isSelfDestructSet(relocation) {
 		// TODO: delete Subscription
-		return nil
-	}
+	} else {
+		if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+			return err
+		}
 
-	if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		return err
-	}
+		if err := registryCert.Cleanup(ctx, r.Client, logger); err != nil {
+			return err
+		}
 
-	if err := registryCert.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
-	}
+		if err := reconcileIngress.Cleanup(ctx, r.Client, logger); err != nil {
+			return err
+		}
 
-	if err := reconcileIngress.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
-	}
-
-	if err := reconcileAPI.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
+		if err := reconcileAPI.Cleanup(ctx, r.Client, logger); err != nil {
+			return err
+		}
 	}
 
 	logger.Info("Successfully finalized ClusterRelocation")
