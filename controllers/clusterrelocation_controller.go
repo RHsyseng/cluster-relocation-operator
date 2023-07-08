@@ -78,6 +78,7 @@ const relocationFinalizer = "relocationfinalizer"
 //+kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=watch;list
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=watch;list
 //+kubebuilder:rbac:groups=operator.openshift.io,resources=imagecontentsourcepolicies,verbs=watch;list
+//+kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=get;list;watch;delete
 
 func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -279,7 +280,18 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 	logger.Info("Starting finalizer")
 
 	if r.isSelfDestructSet(relocation) {
-		// TODO: delete Subscription
+		subscriptions := &operatorhubv1alpha1.SubscriptionList{}
+		if err := r.Client.List(ctx, subscriptions, client.InNamespace("openshift-operators")); err != nil {
+			return err
+		}
+		for _, v := range subscriptions.Items {
+			if v.Spec.Package == "cluster-relocation-operator" {
+				if err := r.Client.Delete(ctx, &v); err != nil {
+					return err
+				}
+				logger.Info("operator subscription deleted")
+			}
+		}
 	} else {
 		if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 			return err

@@ -231,6 +231,15 @@ rules:
   - update
   - watch
 - apiGroups:
+  - operators.coreos.com
+  resources:
+  - subscriptions
+  verbs:
+  - delete
+  - get
+  - list
+  - watch
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - clusterrolebindings
