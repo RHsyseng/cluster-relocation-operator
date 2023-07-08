@@ -81,6 +81,21 @@ spec:
     - <new_ssh_key>
 EOF
 ```
+### Deleting the CR
+When you delete the ClusterRelocation CR, everything will be reverted back to its original state.
+
+Optionally, you may add the `self-destruct: "true"` annotation when you create the CR:
+```
+apiVersion: rhsyseng.github.io/v1beta1
+kind: ClusterRelocation
+metadata:
+  name: cluster
+  annotations:
+    self-destruct: "true"
+```
+
+This annotation will cause the operator to delete itself (the CR and the Subscription) once the reconciliation has completed, while allowing the cluster to retain all of the new configuration.
+This is useful if you want to remove any operator related overhead on the cluster after the relocation configuration has been applied.
 
 ## Contributing
 This is a community project, feel free to open a PR and help out!

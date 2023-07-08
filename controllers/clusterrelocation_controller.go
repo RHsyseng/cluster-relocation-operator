@@ -222,6 +222,13 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	apimeta.SetStatusCondition(&relocation.Status.Conditions, successCondition)
 
 	logger.Info("Reconcile complete")
+
+	if r.isSelfDestructSet(relocation) {
+		logger.Info("self-destruct is set, removing CR")
+		if err := r.Client.Delete(ctx, relocation, client.PropagationPolicy(metav1.DeletePropagationOrphan)); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -270,6 +277,11 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
 	logger.Info("Starting finalizer")
+
+	if r.isSelfDestructSet(relocation) {
+		// TODO: delete Subscription
+		return nil
+	}
 
 	if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		return err
@@ -328,6 +340,17 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 		return err
 	}
 	return nil
+}
+
+func (r *ClusterRelocationReconciler) isSelfDestructSet(relocation *rhsysenggithubiov1beta1.ClusterRelocation) bool {
+	selfDestruct := false
+	val, ok := relocation.Annotations["self-destruct"]
+	if ok {
+		if val == "true" {
+			selfDestruct = true
+		}
+	}
+	return selfDestruct
 }
 
 // SetupWithManager sets up the controller with the Manager.
