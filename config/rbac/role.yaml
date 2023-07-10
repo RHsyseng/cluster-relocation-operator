@@ -172,6 +172,14 @@ rules:
 - apiGroups:
   - machineconfiguration.openshift.io
   resources:
+  - machineconfigpools
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - machineconfiguration.openshift.io
+  resources:
   - machineconfigs
   verbs:
   - create

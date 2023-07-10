@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	"github.com/go-logr/logr"
@@ -12,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -35,6 +37,7 @@ type MachineConfigData struct {
 
 //+kubebuilder:rbac:groups="",resources=nodes,verbs=list;watch
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=create;update;get;list;watch
+//+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigpools,verbs=get;list;watch
 
 func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	nodes := &corev1.NodeList{}
@@ -92,6 +95,31 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	if op != controllerutil.OperationResultNone {
 		logger.Info("Updated DNS settings", "OperationResult", op)
 	}
+
+	// wait for the MachineConfigPool to include our new MachineConfig, and wait for it to update
+	logger.Info("waiting for MachineConfigPool to update")
+	masterMCP := &machineconfigurationv1.MachineConfigPool{}
+	for {
+		if err := c.Get(ctx, types.NamespacedName{Name: "master"}, masterMCP); err != nil {
+			return err
+		}
+		found := false
+		for _, v := range masterMCP.Status.Configuration.Source {
+			if v.Name == "relocation-dns-master" {
+				found = true
+			}
+		}
+		if !found {
+			time.Sleep(time.Second * 10)
+		} else {
+			if machineconfigurationv1.IsMachineConfigPoolConditionPresentAndEqual(masterMCP.Status.Conditions, machineconfigurationv1.MachineConfigPoolUpdating, corev1.ConditionFalse) {
+				break
+			} else {
+				time.Sleep(time.Second * 10)
+			}
+		}
+	}
+
 	return nil
 }
 
