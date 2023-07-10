@@ -78,6 +78,7 @@ const relocationFinalizer = "relocationfinalizer"
 //+kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=watch;list
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=watch;list
 //+kubebuilder:rbac:groups=operator.openshift.io,resources=imagecontentsourcepolicies,verbs=watch;list
+//+kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=get;list;watch;delete
 
 func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -116,26 +117,13 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	skipFinalizer := false
-	val, ok := relocation.Annotations["skip-finalizer"]
-	if ok {
-		if val == "true" {
-			skipFinalizer = true
-		}
-	}
 	// Add finalizer for this CR
-	if !skipFinalizer && !controllerutil.ContainsFinalizer(relocation, relocationFinalizer) {
+	if !controllerutil.ContainsFinalizer(relocation, relocationFinalizer) {
 		controllerutil.AddFinalizer(relocation, relocationFinalizer)
 		if err := r.Update(ctx, relocation); err != nil {
 			return ctrl.Result{}, err
 		}
 		logger.Info("Added finalizer to CR")
-	} else if skipFinalizer && controllerutil.ContainsFinalizer(relocation, relocationFinalizer) {
-		controllerutil.RemoveFinalizer(relocation, relocationFinalizer)
-		if err := r.Update(ctx, relocation); err != nil {
-			return ctrl.Result{}, err
-		}
-		logger.Info("Removed finalizer from CR")
 	}
 
 	defer r.updateStatus(ctx, relocation, logger)
@@ -235,6 +223,13 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	apimeta.SetStatusCondition(&relocation.Status.Conditions, successCondition)
 
 	logger.Info("Reconcile complete")
+
+	if r.isSelfDestructSet(relocation) {
+		logger.Info("self-destruct is set, removing CR")
+		if err := r.Client.Delete(ctx, relocation, client.PropagationPolicy(metav1.DeletePropagationOrphan)); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -284,20 +279,35 @@ func (r *ClusterRelocationReconciler) updateStatus(ctx context.Context, relocati
 func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, logger logr.Logger, relocation *rhsysenggithubiov1beta1.ClusterRelocation) error {
 	logger.Info("Starting finalizer")
 
-	if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		return err
-	}
+	if r.isSelfDestructSet(relocation) {
+		subscriptions := &operatorhubv1alpha1.SubscriptionList{}
+		if err := r.Client.List(ctx, subscriptions, client.InNamespace("openshift-operators")); err != nil {
+			return err
+		}
+		for _, v := range subscriptions.Items {
+			if v.Spec.Package == "cluster-relocation-operator" {
+				if err := r.Client.Delete(ctx, &v); err != nil {
+					return err
+				}
+				logger.Info("operator subscription deleted")
+			}
+		}
+	} else {
+		if err := reconcilePullSecret.Cleanup(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+			return err
+		}
 
-	if err := registryCert.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
-	}
+		if err := registryCert.Cleanup(ctx, r.Client, logger); err != nil {
+			return err
+		}
 
-	if err := reconcileIngress.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
-	}
+		if err := reconcileIngress.Cleanup(ctx, r.Client, logger); err != nil {
+			return err
+		}
 
-	if err := reconcileAPI.Cleanup(ctx, r.Client, logger); err != nil {
-		return err
+		if err := reconcileAPI.Cleanup(ctx, r.Client, logger); err != nil {
+			return err
+		}
 	}
 
 	logger.Info("Successfully finalized ClusterRelocation")
@@ -341,6 +351,17 @@ func (r *ClusterRelocationReconciler) installSchemes() error {
 		return err
 	}
 	return nil
+}
+
+func (r *ClusterRelocationReconciler) isSelfDestructSet(relocation *rhsysenggithubiov1beta1.ClusterRelocation) bool {
+	selfDestruct := false
+	val, ok := relocation.Annotations["self-destruct"]
+	if ok {
+		if val == "true" {
+			selfDestruct = true
+		}
+	}
+	return selfDestruct
 }
 
 // SetupWithManager sets up the controller with the Manager.
