@@ -64,13 +64,22 @@ import (
 //+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=get;list;watch;create;update;patch;delete
 
 // returns nil if the Klusterlet is Available, error otherwise
-func checkKlusterlet(ctx context.Context, c client.Client, logger logr.Logger) error {
+func checkKlusterlet(ctx context.Context, c client.Client, relocation *rhsysenggithubiov1beta1.ClusterRelocation, logger logr.Logger) error {
 	klusterlet := &operatorapiv1.Klusterlet{}
 	err := c.Get(ctx, types.NamespacedName{Name: "klusterlet"}, klusterlet)
 	if err == nil {
 		klusterletCondition := apimeta.FindStatusCondition(klusterlet.Status.Conditions, "Available")
 		if klusterletCondition != nil && klusterletCondition.Status == metav1.ConditionTrue {
 			logger.Info("cluster registered to ACM")
+
+			acmSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: relocation.Spec.ACMRegistration.ACMSecret.Name, Namespace: relocation.Spec.ACMRegistration.ACMSecret.Namespace}}
+			if err := c.Delete(ctx, acmSecret); err != nil {
+				if !errors.IsNotFound(err) {
+					return err
+				}
+			} else {
+				logger.Info("acmSecret deleted")
+			}
 		} else {
 			return fmt.Errorf("cluster not registered to ACM")
 		}
@@ -84,7 +93,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	}
 
 	// skip these steps if the cluster is already registered to ACM
-	if checkKlusterlet(ctx, c, logger) == nil {
+	if checkKlusterlet(ctx, c, relocation, logger) == nil {
 		return nil
 	}
 
@@ -213,16 +222,11 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		}
 	}
 
-	logger.Info("deleting acmSecret")
-	if err := c.Delete(ctx, acmSecret); err != nil {
-		return err
-	}
-
 	logger.Info("waiting for Klusterlet to become Available")
 	// wait for the Klusterlet to become Available
 	startTime := time.Now()
 	for {
-		if checkKlusterlet(ctx, c, logger) == nil {
+		if checkKlusterlet(ctx, c, relocation, logger) == nil {
 			return nil
 		}
 		time.Sleep(time.Second * 10)
