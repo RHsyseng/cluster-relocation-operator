@@ -79,6 +79,7 @@ const relocationFinalizer = "relocationfinalizer"
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=watch;list
 //+kubebuilder:rbac:groups=operator.openshift.io,resources=imagecontentsourcepolicies,verbs=watch;list
 //+kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=get;list;watch;delete
+//+kubebuilder:rbac:groups=operators.coreos.com,resources=clusterserviceversions,verbs=delete
 
 func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -286,10 +287,14 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 		}
 		for _, v := range subscriptions.Items {
 			if v.Spec.Package == "cluster-relocation-operator" {
+				csv := &operatorhubv1alpha1.ClusterServiceVersion{ObjectMeta: metav1.ObjectMeta{Name: v.Status.CurrentCSV, Namespace: v.Namespace}}
 				if err := r.Client.Delete(ctx, &v); err != nil {
 					return err
 				}
-				logger.Info("operator subscription deleted")
+				if err := r.Client.Delete(ctx, csv); err != nil {
+					return err
+				}
+				logger.Info("operator deleted")
 			}
 		}
 	} else {
