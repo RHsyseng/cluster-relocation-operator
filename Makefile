@@ -208,6 +208,7 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	operator-sdk generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
+	cp -r tests/kuttl bundle/tests/scorecard/
 	operator-sdk bundle validate ./bundle
 
 .PHONY: bundle-build

@@ -1,0 +1,10 @@
+apiVersion: kudo.dev/v1beta1
+kind: TestSuite
+metadata:
+  name: cluster-relocation-test
+parallel: 4
+timeout: 120000
+startControlPlane: false
+spec:
+  testDirs:
+    - test-pods
