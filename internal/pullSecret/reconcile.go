@@ -27,6 +27,10 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		return fmt.Errorf("must specify secret name and namespace")
 	}
 
+	if err := secrets.ValidateSecretType(ctx, c, relocation.Spec.PullSecretRef, corev1.SecretTypeDockerConfigJson); err != nil {
+		return err
+	}
+
 	backupPullSecret := &corev1.Secret{}
 	if err := c.Get(ctx, types.NamespacedName{Name: rhsysenggithubiov1beta1.BackupPullSecretName, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, backupPullSecret); err != nil {
 		if errors.IsNotFound(err) {

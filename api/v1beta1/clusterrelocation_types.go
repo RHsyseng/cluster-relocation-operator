@@ -33,6 +33,7 @@ type ClusterRelocationSpec struct {
 
 	// APICertRef is a reference to a TLS secret that will be used for the API server.
 	// If it is omitted, a self-signed certificate will be generated.
+	// The type of the secret must be kubernetes.io/tls.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	APICertRef *corev1.SecretReference `json:"apiCertRef,omitempty"`
 
@@ -50,11 +51,13 @@ type ClusterRelocationSpec struct {
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
 	// If it is omitted, a self-signed certificate will be generated.
+	// The type of the secret must be kubernetes.io/tls.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	IngressCertRef *corev1.SecretReference `json:"ingressCertRef,omitempty"`
 
 	// PullSecretRef is a reference to new cluster-wide pull secret.
 	// If defined, it will replace the secret located at openshift-config/pull-secret.
+	// The type of the secret must be kubernetes.io/dockerconfigjson.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	PullSecretRef *corev1.SecretReference `json:"pullSecretRef,omitempty"`
 
@@ -138,6 +141,7 @@ type ACMRegistration struct {
 	// It must have a 'token' field. Optionally, it can have a 'ca.crt' field
 	// which provides the CA bundle for the ACM cluster.
 	// The secret is deleted once ACM registration succeeds.
+	// The type of the secret must be Opaque.
 	ACMSecret corev1.SecretReference `json:"acmSecret"`
 
 	// KlusterletAddonConfig is the klusterlet add-on configuration.

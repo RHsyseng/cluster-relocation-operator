@@ -8,6 +8,7 @@ import (
 	"time"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
+	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
 	"github.com/go-logr/logr"
 	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -95,6 +96,10 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	// skip these steps if the cluster is already registered to ACM
 	if checkKlusterlet(ctx, c, relocation, logger) == nil {
 		return nil
+	}
+
+	if err := secrets.ValidateSecretType(ctx, c, &relocation.Spec.ACMRegistration.ACMSecret, corev1.SecretTypeOpaque); err != nil {
+		return err
 	}
 
 	// the acmSecret holds the credentials for the ACM cluster
