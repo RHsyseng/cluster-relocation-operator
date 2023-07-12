@@ -70,6 +70,10 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		if relocation.Spec.APICertRef.Name == "" || relocation.Spec.APICertRef.Namespace == "" {
 			return fmt.Errorf("must specify secret name and namespace")
 		}
+		if err := secrets.ValidateSecretType(ctx, c, relocation.Spec.APICertRef, corev1.SecretTypeTLS); err != nil {
+			return err
+		}
+
 		origSecretName = relocation.Spec.APICertRef.Name
 		origSecretNamespace = relocation.Spec.APICertRef.Namespace
 		logger.Info("Using user provided API certificate", "namespace", origSecretNamespace, "name", origSecretName)

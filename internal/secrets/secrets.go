@@ -121,3 +121,14 @@ func CopySecret(ctx context.Context, c client.Client, relocation *rhsysenggithub
 
 	return op, err
 }
+
+func ValidateSecretType(ctx context.Context, c client.Client, ref *corev1.SecretReference, desiredSecretType corev1.SecretType) error {
+	secret := &corev1.Secret{}
+	if err := c.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, secret); err != nil {
+		return err
+	}
+	if secret.Type != desiredSecretType {
+		return fmt.Errorf("secret %s is type %s, should be %s", secret.Name, secret.Type, desiredSecretType)
+	}
+	return nil
+}

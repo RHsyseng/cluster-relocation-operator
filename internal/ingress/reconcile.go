@@ -90,6 +90,10 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		if relocation.Spec.IngressCertRef.Name == "" || relocation.Spec.IngressCertRef.Namespace == "" {
 			return fmt.Errorf("must specify secret name and namespace")
 		}
+		if err := secrets.ValidateSecretType(ctx, c, relocation.Spec.IngressCertRef, corev1.SecretTypeTLS); err != nil {
+			return err
+		}
+
 		origSecretName = relocation.Spec.IngressCertRef.Name
 		origSecretNamespace = relocation.Spec.IngressCertRef.Namespace
 		logger.Info("Using user provided Ingress certificate", "namespace", origSecretNamespace, "name", origSecretName)
