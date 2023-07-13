@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileACM "github.com/RHsyseng/cluster-relocation-operator/internal/acm"
@@ -166,6 +167,18 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			r.setFailedStatus(relocation, rhsysenggithubiov1beta1.DNSReconciliationFailedReason, err.Error())
 			return ctrl.Result{}, err
 		}
+	}
+
+	// Make sure DNS entries work
+	_, err := net.LookupIP(fmt.Sprintf("api.%s", relocation.Spec.Domain))
+	if err != nil {
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.DNSReconciliationFailedReason, err.Error())
+		return ctrl.Result{}, err
+	}
+	_, err = net.LookupIP(fmt.Sprintf("test.apps.%s", relocation.Spec.Domain))
+	if err != nil {
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.DNSReconciliationFailedReason, err.Error())
+		return ctrl.Result{}, err
 	}
 
 	// Applies a new certificate and domain alias to the API server
