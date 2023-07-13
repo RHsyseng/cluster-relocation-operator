@@ -237,6 +237,13 @@ spec:
                 - clusterName
                 - url
                 type: object
+              addInternalDNSEntries:
+                description: AddInternalDNSEntries deploys a MachineConfig which adds
+                  api and *.apps entries for the new domain to dnsmasq on SNO clusters.
+                  Setting this to true will cause a reboot. If you don't enable this
+                  option, you need to make sure that the cluster can resolve the new
+                  domain address via some other method.
+                type: boolean
               apiCertRef:
                 description: APICertRef is a reference to a TLS secret that will be
                   used for the API server. If it is omitted, a self-signed certificate

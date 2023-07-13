@@ -160,10 +160,12 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Adds new internal DNS records
-	if err := reconcileDNS.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.DNSReconciliationFailedReason, err.Error())
-		return ctrl.Result{}, err
+	if relocation.Spec.AddInternalDNSEntries != nil && *relocation.Spec.AddInternalDNSEntries {
+		// Adds new internal DNS records
+		if err := reconcileDNS.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+			r.setFailedStatus(relocation, rhsysenggithubiov1beta1.DNSReconciliationFailedReason, err.Error())
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Applies a new certificate and domain alias to the API server
