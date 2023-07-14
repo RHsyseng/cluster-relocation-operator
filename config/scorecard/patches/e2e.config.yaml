@@ -4,4 +4,4 @@
     image: quay.io/operator-framework/scorecard-test-kuttl:v2.1.0
     labels:
       suite: e2e
-      test: test-pods
+      test: relocation-operator

@@ -7,4 +7,4 @@ timeout: 120000
 startControlPlane: false
 spec:
   testDirs:
-    - test-pods
+  - install-operator

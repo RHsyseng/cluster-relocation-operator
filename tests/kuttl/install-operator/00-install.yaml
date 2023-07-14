@@ -1,0 +1,19 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: relocation-operator
+  namespace: openshift-marketplace
+spec:
+  image: quay.io/rhsysdeseng/operators/cluster-relocation-operator-catalog:v0.9.4
+  sourceType: grpc
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: "cluster-relocation-operator"
+  namespace: "openshift-operators"
+spec:
+  installPlanApproval: "Automatic"
+  source: "relocation-operator"
+  sourceNamespace: "openshift-marketplace"
+  name: "cluster-relocation-operator"
