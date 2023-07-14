@@ -31,6 +31,12 @@ type ClusterRelocationSpec struct {
 	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	ACMRegistration *ACMRegistration `json:"acmRegistration,omitempty"`
 
+	// AddInternalDNSEntries deploys a MachineConfig which adds api and *.apps entries for the new domain to dnsmasq on SNO clusters.
+	// Setting this to true will cause a reboot.
+	// If you don't enable this option, you need to make sure that the cluster can resolve the new domain address via some other method.
+	//+operator-sdk:csv:customresourcedefinitions:type=spec
+	AddInternalDNSEntries *bool `json:"addInternalDNSEntries,omitempty"`
+
 	// APICertRef is a reference to a TLS secret that will be used for the API server.
 	// If it is omitted, a self-signed certificate will be generated.
 	// The type of the secret must be kubernetes.io/tls.

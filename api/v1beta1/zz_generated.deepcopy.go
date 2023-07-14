@@ -137,6 +137,11 @@ func (in *ClusterRelocationSpec) DeepCopyInto(out *ClusterRelocationSpec) {
 		*out = new(ACMRegistration)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.AddInternalDNSEntries != nil {
+		in, out := &in.AddInternalDNSEntries, &out.AddInternalDNSEntries
+		*out = new(bool)
+		**out = **in
+	}
 	if in.APICertRef != nil {
 		in, out := &in.APICertRef, &out.APICertRef
 		*out = new(v1.SecretReference)

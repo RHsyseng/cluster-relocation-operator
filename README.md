@@ -16,7 +16,7 @@ This operator can assist in reconfiguring a cluster once it has been moved to a 
 * (Optional) Add new trusted CA for a mirror registry.
 * (Optional) Register the cluster to ACM.
 
-Applying the ClusterRelocation CR will cause the node(s) to reboot, since a MachineConfig is applied as part of the process.
+The cluster needs to be able to resolve the API and ingress (*.apps) addresses for the new domain. On SNO, you can set the `addInternalDNSEntries` key to `true` in the CR spec in order to add internal DNS entries via dnsmasq. Enabling this option will cause the node to reboot, because a MachineConfig is applied.
 
 ## Getting Started
 You’ll need an OpenShift cluster to run against. The cluster must be v4.12 or higher.
