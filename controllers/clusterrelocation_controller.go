@@ -395,7 +395,9 @@ func (r *ClusterRelocationReconciler) verifyDomain(ctx context.Context, domainNa
 	if err := util.WaitForCO(ctx, r.Client, logger, "openshift-apiserver"); err != nil {
 		return err
 	}
-	reconcileIngress.ResetRoutes(ctx, r.Client, fmt.Sprintf("apps.%s", domainName), logger)
+	if err := reconcileIngress.ResetRoutes(ctx, r.Client, fmt.Sprintf("apps.%s", domainName), logger); err != nil {
+		return err
+	}
 	return nil
 }
 
