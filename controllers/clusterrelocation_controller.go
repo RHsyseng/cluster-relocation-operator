@@ -18,8 +18,10 @@ package controllers
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
+	"time"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	reconcileACM "github.com/RHsyseng/cluster-relocation-operator/internal/acm"
@@ -31,6 +33,7 @@ import (
 	reconcilePullSecret "github.com/RHsyseng/cluster-relocation-operator/internal/pullSecret"
 	registryCert "github.com/RHsyseng/cluster-relocation-operator/internal/registryCert"
 	reconcileSSH "github.com/RHsyseng/cluster-relocation-operator/internal/ssh"
+	"github.com/RHsyseng/cluster-relocation-operator/internal/util"
 	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	clusterv1 "open-cluster-management.io/api/cluster/v1"
 	operatorapiv1 "open-cluster-management.io/api/operator/v1"
@@ -75,6 +78,7 @@ const relocationFinalizer = "relocationfinalizer"
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=watch;list
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=watch;list
 //+kubebuilder:rbac:groups=config.openshift.io,resources=clusterversions,verbs=get;watch;list
+//+kubebuilder:rbac:groups=config.openshift.io,resources=dnses,verbs=get;watch;list
 //+kubebuilder:rbac:groups=config.openshift.io,resources=imagedigestmirrorsets,verbs=watch;list
 //+kubebuilder:rbac:groups=operators.coreos.com,resources=catalogsources,verbs=watch;list
 //+kubebuilder:rbac:groups=machineconfiguration.openshift.io,resources=machineconfigs,verbs=watch;list
@@ -181,24 +185,6 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
-	// Applies a new certificate and domain alias to the API server
-	if err := reconcileAPI.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.APIReconciliationFailedReason, err.Error())
-		return ctrl.Result{}, err
-	}
-
-	// Applies a new certificate and domain alias to the Apps ingressesed
-	if err := reconcileIngress.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.IngressReconciliationFailedReason, err.Error())
-		return ctrl.Result{}, err
-	}
-
-	// Apply a new cluster-wide pull secret
-	if err := reconcilePullSecret.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
-		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.PullSecretReconciliationFailedReason, err.Error())
-		return ctrl.Result{}, err
-	}
-
 	// Applies a SSH key for the 'core' user
 	if err := reconcileSSH.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.SSHReconciliationFailedReason, err.Error())
@@ -217,9 +203,32 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	// Apply a new cluster-wide pull secret
+	if err := reconcilePullSecret.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.PullSecretReconciliationFailedReason, err.Error())
+		return ctrl.Result{}, err
+	}
+
 	// Applies new catalog sources
 	if err := reconcileCatalog.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.CatalogReconciliationFailedReason, err.Error())
+		return ctrl.Result{}, err
+	}
+
+	// Applies a new certificate and domain alias to the Ingress
+	if err := reconcileIngress.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.IngressReconciliationFailedReason, err.Error())
+		return ctrl.Result{}, err
+	}
+
+	// Applies a new certificate and domain alias to the API server
+	if err := reconcileAPI.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.APIReconciliationFailedReason, err.Error())
+		return ctrl.Result{}, err
+	}
+
+	if err := r.verifyDomain(ctx, relocation.Spec.Domain, logger); err != nil {
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.InProgressReconciliationFailedReason, err.Error())
 		return ctrl.Result{}, err
 	}
 
@@ -328,9 +337,65 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 		if err := reconcileAPI.Cleanup(ctx, r.Client, logger); err != nil {
 			return err
 		}
+
+		clusterDNS := &configv1.DNS{}
+		if err := r.Client.Get(ctx, types.NamespacedName{Name: "cluster"}, clusterDNS); err != nil {
+			return err
+		}
+		if err := r.verifyDomain(ctx, clusterDNS.Spec.BaseDomain, logger); err != nil {
+			return err
+		}
 	}
 
 	logger.Info("Successfully finalized ClusterRelocation")
+	return nil
+}
+
+func (r *ClusterRelocationReconciler) verifyDomain(ctx context.Context, domainName string, logger logr.Logger) error {
+	urls := []map[string]string{
+		{
+			"type":       "ingress",
+			"url":        fmt.Sprintf("test.apps.%s:443", domainName),
+			"commonName": fmt.Sprintf("*.apps.%s", domainName),
+		},
+		{
+			"type":       "kube-apiserver",
+			"url":        fmt.Sprintf("api.%s:6443", domainName),
+			"commonName": fmt.Sprintf("api.%s", domainName),
+		},
+	}
+
+	for _, v := range urls {
+		updated := false
+		for {
+			conn, err := tls.Dial("tcp", v["url"], &tls.Config{InsecureSkipVerify: true})
+			if err != nil {
+				return err
+			}
+			certs := conn.ConnectionState().PeerCertificates
+			conn.Close()
+			for _, cert := range certs {
+				if cert.Subject.CommonName == v["commonName"] {
+					updated = true
+				}
+			}
+			if updated {
+				// ensure that ClusterOperator has settled
+				if err := util.WaitForCO(ctx, r.Client, logger, v["type"]); err != nil {
+					return err
+				}
+				break
+			} else {
+				logger.Info(fmt.Sprintf("Waiting for %s to update", v["type"]))
+				time.Sleep(time.Second * 10)
+			}
+		}
+	}
+
+	if err := util.WaitForCO(ctx, r.Client, logger, "openshift-apiserver"); err != nil {
+		return err
+	}
+	reconcileIngress.ResetRoutes(ctx, r.Client, fmt.Sprintf("apps.%s", domainName), logger)
 	return nil
 }
 

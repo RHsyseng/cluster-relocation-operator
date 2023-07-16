@@ -14,14 +14,7 @@ import (
 //+kubebuilder:rbac:groups=config.openshift.io,resources=clusteroperators,verbs=get;list;watch
 
 // Waits for the operator to update before returning
-func WaitForCO(ctx context.Context, c client.Client, logger logr.Logger, operator string, waitProgressingTrue bool) error {
-	if waitProgressingTrue {
-		logger.Info(fmt.Sprintf("Waiting for %s Progressing to be %s", operator, configv1.ConditionTrue))
-		if err := waitStatus(ctx, c, logger, operator, configv1.OperatorProgressing, configv1.ConditionTrue); err != nil {
-			return err
-		}
-	}
-
+func WaitForCO(ctx context.Context, c client.Client, logger logr.Logger, operator string) error {
 	logger.Info(fmt.Sprintf("Waiting for %s Progressing to be %s", operator, configv1.ConditionFalse))
 	if err := waitStatus(ctx, c, logger, operator, configv1.OperatorProgressing, configv1.ConditionFalse); err != nil {
 		return err
