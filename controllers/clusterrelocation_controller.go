@@ -232,6 +232,11 @@ func (r *ClusterRelocationReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, err
 	}
 
+	if err := reconcileIngress.ResetRoutes(ctx, r.Client, fmt.Sprintf("apps.%s", relocation.Spec.Domain), logger); err != nil {
+		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.InProgressReconciliationFailedReason, err.Error())
+		return ctrl.Result{}, err
+	}
+
 	// Registers to ACM
 	if err := reconcileACM.Reconcile(ctx, r.Client, r.Scheme, relocation, logger); err != nil {
 		r.setFailedStatus(relocation, rhsysenggithubiov1beta1.ACMReconciliationFailedReason, err.Error())
@@ -345,6 +350,10 @@ func (r *ClusterRelocationReconciler) finalizeRelocation(ctx context.Context, lo
 		if err := r.verifyDomain(ctx, clusterDNS.Spec.BaseDomain, logger); err != nil {
 			return err
 		}
+
+		if err := reconcileIngress.ResetRoutes(ctx, r.Client, fmt.Sprintf("apps.%s", clusterDNS.Spec.BaseDomain), logger); err != nil {
+			return err
+		}
 	}
 
 	logger.Info("Successfully finalized ClusterRelocation")
@@ -392,12 +401,6 @@ func (r *ClusterRelocationReconciler) verifyDomain(ctx context.Context, domainNa
 		}
 	}
 
-	if err := util.WaitForCO(ctx, r.Client, logger, "openshift-apiserver"); err != nil {
-		return err
-	}
-	if err := reconcileIngress.ResetRoutes(ctx, r.Client, fmt.Sprintf("apps.%s", domainName), logger); err != nil {
-		return err
-	}
 	return nil
 }
 

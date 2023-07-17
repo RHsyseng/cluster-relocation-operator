@@ -7,6 +7,7 @@ import (
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
+	"github.com/RHsyseng/cluster-relocation-operator/internal/util"
 	"github.com/go-logr/logr"
 	configv1 "github.com/openshift/api/config/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
@@ -226,8 +227,15 @@ func ResetRoutes(ctx context.Context, c client.Client, domainName string, logger
 		return err
 	}
 
+	if err := util.WaitForCO(ctx, c, logger, "openshift-apiserver"); err != nil {
+		return err
+	}
+
 	for _, v := range routes.Items {
 		if v.Namespace == "openshift-console" || v.Namespace == "openshift-authentication" || v.Namespace == "open-cluster-management-agent-addon" {
+			// open-cluster-management-agent-addon is ignored because right now the Klusterlet Add-on ignores the "appsDomain" setting
+			// A PR has been opened to correct this: https://github.com/stolostron/multicloud-operators-foundation/pull/642
+			// without this fix, the Route created by the Klusterlet is always re-created with the original domain
 			continue
 		}
 		for _, w := range v.Status.Ingress {
