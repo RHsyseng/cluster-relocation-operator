@@ -10,6 +10,7 @@ import (
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	secrets "github.com/RHsyseng/cluster-relocation-operator/internal/secrets"
 	"github.com/go-logr/logr"
+	configv1 "github.com/openshift/api/config/v1"
 	agentv1 "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -28,6 +29,7 @@ import (
 
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;delete;get;list;watch
 //+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=get;list;watch
+//+kubebuilder:rbac:groups=config.openshift.io,resources=apiservers,verbs=get;list;watch
 
 // these resources are created by the 'crds.yaml' file that is provided by ACM
 //+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=create
@@ -130,6 +132,21 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		managedClusterSet = *relocation.Spec.ACMRegistration.ManagedClusterSet
 	}
 
+	apiServer := &configv1.APIServer{}
+	if err := c.Get(ctx, types.NamespacedName{Name: "cluster"}, apiServer); err != nil {
+		return err
+	}
+	var caBundle []byte
+	for _, v := range apiServer.Spec.ServingCerts.NamedCertificates {
+		if v.Names[0] == fmt.Sprintf("api.%s", relocation.Spec.Domain) {
+			apiSecret := &corev1.Secret{}
+			if err := c.Get(ctx, types.NamespacedName{Name: v.ServingCertificate.Name, Namespace: rhsysenggithubiov1beta1.ConfigNamespace}, apiSecret); err != nil {
+				return err
+			}
+			caBundle = apiSecret.Data[corev1.TLSCertKey]
+		}
+	}
+
 	managedCluster := &clusterv1.ManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: relocation.Spec.ACMRegistration.ClusterName,
@@ -142,7 +159,10 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		Spec: clusterv1.ManagedClusterSpec{
 			HubAcceptsClient: true,
 			ManagedClusterClientConfigs: []clusterv1.ClientConfig{
-				{URL: fmt.Sprintf("https://api.%s:6443", relocation.Spec.Domain)},
+				{
+					URL:      fmt.Sprintf("https://api.%s:6443", relocation.Spec.Domain),
+					CABundle: caBundle,
+				},
 			},
 		},
 	}
