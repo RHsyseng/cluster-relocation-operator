@@ -30,6 +30,7 @@ import (
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=create;delete;get;list;watch
 //+kubebuilder:rbac:groups=operator.open-cluster-management.io,resources=klusterlets,verbs=get;list;watch
 //+kubebuilder:rbac:groups=config.openshift.io,resources=apiservers,verbs=get;list;watch
+//+kubebuilder:rbac:groups=config.openshift.io,resources=dnses,verbs=get;watch;list
 
 // these resources are created by the 'crds.yaml' file that is provided by ACM
 //+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=create
@@ -147,6 +148,11 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		}
 	}
 
+	clusterDNS := &configv1.DNS{}
+	if err := c.Get(ctx, types.NamespacedName{Name: "cluster"}, clusterDNS); err != nil {
+		return err
+	}
+
 	managedCluster := &clusterv1.ManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: relocation.Spec.ACMRegistration.ClusterName,
@@ -162,6 +168,10 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 				{
 					URL:      fmt.Sprintf("https://api.%s:6443", relocation.Spec.Domain),
 					CABundle: caBundle,
+				},
+				{
+					// putting this here ensures that the new API URL is the first item in the list
+					URL: fmt.Sprintf("https://api.%s:6443", clusterDNS.Spec.BaseDomain),
 				},
 			},
 		},
