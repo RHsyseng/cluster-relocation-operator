@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"go.uber.org/zap"
 	"os"
 	"time"
 
@@ -30,7 +31,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	logzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	rhsysenggithubiov1beta1 "github.com/RHsyseng/cluster-relocation-operator/api/v1beta1"
 	"github.com/RHsyseng/cluster-relocation-operator/controllers"
@@ -58,14 +59,15 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	opts := zap.Options{
+	opts := logzap.Options{
 		Development: true,
+		ZapOpts:     []zap.Option{zap.AddCaller()},
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
+	ctrl.SetLogger(logzap.New(logzap.UseFlagOptions(&opts)))
+	ctrl.Log.Info("Starting...")
 	// we extend these because the API server is often unavailable during reconciliation for this operator
 	leaseDuration := 60 * time.Second
 	renewDeadline := 50 * time.Second
