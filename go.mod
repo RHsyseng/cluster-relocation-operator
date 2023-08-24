@@ -7,19 +7,19 @@ require (
 	github.com/onsi/gomega v1.27.10
 	github.com/openshift/api v0.0.0-20230221095031-69130006bb23
 	github.com/openshift/machine-config-operator v0.0.1-0.20230526005055-5843b7a4b27f
-	github.com/operator-framework/api v0.17.6
+	github.com/operator-framework/api v0.17.7
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20230528112800-a466a2368df4
 	golang.org/x/mod v0.12.0
-	k8s.io/apimachinery v0.26.8
-	k8s.io/client-go v0.26.8
-	sigs.k8s.io/controller-runtime v0.14.6
+	k8s.io/apimachinery v0.27.2
+	k8s.io/client-go v0.27.2
+	sigs.k8s.io/controller-runtime v0.15.0
 )
 
 require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.2 // indirect
 	github.com/stolostron/cluster-lifecycle-api v0.0.0-20220621134646-8b67f2e6afed // indirect
 	golang.org/x/tools v0.12.0 // indirect
 	open-cluster-management.io/api v0.11.0
@@ -72,11 +72,11 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.26.8
-	k8s.io/apiextensions-apiserver v0.26.5 // indirect
-	k8s.io/component-base v0.26.5 // indirect
+	k8s.io/api v0.27.2
+	k8s.io/apiextensions-apiserver v0.27.2 // indirect
+	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
+	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
