@@ -59,3 +59,38 @@ oc apply -f /tmp/acm-secret.yaml
 ```
 
 Now your target cluster has a Secret than will allow it to authenticate to the ACM cluster and register itself. Once the registration succeeds, the secret is deleted from the target cluster.
+
+## Pre-creating the ManagedCluster and (optionally) KlusterletAddonConfig
+If you would rather pre-create the ManagedCluster on the ACM cluster, you can omit the `managedClusterSet` and `klusterletAddonConfig` fields from the CR.
+
+The Service Account that you create only needs permissions to "get" Secrets for the namespace created by the ManagedCluster.
+
+For example (run these commands on your ACM cluster):
+```
+oc create sa -n multicluster-engine acm-registration-sa
+
+cat << EOF | oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: secret-reader
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-secrets
+  namespace: <managed-cluster-name>
+subjects:
+- kind: ServiceAccount
+  name: acm-registration-sa
+  namespace: multicluster-engine
+roleRef:
+  kind: ClusterRole
+  name: secret-reader
+  apiGroup: rbac.authorization.k8s.io
+EOF
+```
