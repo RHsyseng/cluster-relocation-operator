@@ -106,12 +106,11 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	}
 
 	// the acmSecret holds the credentials for the ACM cluster
-	// these credentials should allow the following:
-	// Creating ManagedClusters (these are cluster scoped resources)
-	// Creating KlusterletAddonConfigs (these are namespace scoped resources)
-	// Getting Secrets (these are namespace scoped resources)
-	//
-	// the secret is deleted once registration succeeds
+	// there are 2 options:
+	// 1. Have this operator create the ManagedCluster and (optionally) KlusterletAddonConfig.
+	//    In this case, the acmSecret token should have open-cluster-management:managedclusterset:admin:default (ClusterRole) permissions.
+	// 2. Pre-create the ManagedCluster and (optionally) KlusterletAddonConfig.
+	//    In this case, the acmSecret token should have permissions to "get" Secrets for the namespace created by the ManagedCluster.
 	acmSecret := &corev1.Secret{}
 	if err := c.Get(ctx, types.NamespacedName{Name: relocation.Spec.ACMRegistration.ACMSecret.Name, Namespace: relocation.Spec.ACMRegistration.ACMSecret.Namespace}, acmSecret); err != nil {
 		return err
@@ -177,11 +176,14 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		},
 	}
 	if err := acmClient.Create(ctx, managedCluster); err != nil {
-		if !errors.IsAlreadyExists(err) {
+		if errors.IsForbidden(err) {
+			logger.Info("could not create ManagedCluster, proceeding anyway (it may have been pre-created)")
+		} else if !errors.IsAlreadyExists(err) {
 			return err
 		}
 	}
 
+	startTime := time.Now()
 	logger.Info("getting ACM import secret")
 	importSecret := &corev1.Secret{}
 	for {
@@ -189,6 +191,11 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 			// after the ManagedCluster is created, it can take some time for this secret and the RBAC roles to be created
 			if errors.IsNotFound(err) || errors.IsForbidden(err) {
 				time.Sleep(time.Second * 10)
+
+				// we set a 5 minute timeout in case the ACM import secret can never be pulled
+				if time.Since(startTime) > time.Minute*5 {
+					return fmt.Errorf("could not get ACM import secret")
+				}
 				continue
 			}
 			return err
@@ -259,7 +266,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 
 	logger.Info("waiting for Klusterlet to become Available")
 	// wait for the Klusterlet to become Available
-	startTime := time.Now()
+	startTime = time.Now()
 	for {
 		if checkKlusterlet(ctx, c, relocation, logger) == nil {
 			return nil
