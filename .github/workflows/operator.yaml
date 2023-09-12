@@ -36,7 +36,7 @@ jobs:
           echo "DEFAULT_CHANNEL=stable" >> $GITHUB_ENV
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Setup registry access
         run: echo "$PULL_SECRET" > ~/.docker/config.json
