@@ -73,7 +73,7 @@ func GenerateTLSKeyPair(ctx context.Context, c client.Client, domain string, pre
 		return nil, err
 	}
 
-	// Create a self-signed certificate template
+	// Create a certificate template
 	certificateTemplate := x509.Certificate{
 		SerialNumber:          big.NewInt(1),
 		Subject:               pkix.Name{CommonName: fmt.Sprintf("%s.%s", prefix, domain)},
@@ -83,7 +83,7 @@ func GenerateTLSKeyPair(ctx context.Context, c client.Client, domain string, pre
 		DNSNames:              []string{fmt.Sprintf("%s.%s", prefix, domain)},
 	}
 
-	// Create a self-signed certificate using the private key and certificate template
+	// Create a certificate using the private key and certificate template, signed by loadbalancer-serving-signer
 	derBytes, err := x509.CreateCertificate(rand.Reader, &certificateTemplate, lbSigningCert, &privateKey.PublicKey, lbSigningPrivateKey)
 	if err != nil {
 		return nil, err

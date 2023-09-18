@@ -246,8 +246,9 @@ spec:
                 type: boolean
               apiCertRef:
                 description: APICertRef is a reference to a TLS secret that will be
-                  used for the API server. If it is omitted, a self-signed certificate
-                  will be generated. The type of the secret must be kubernetes.io/tls.
+                  used for the API server. If it is omitted, a certificate will be
+                  generated and signed by loadbalancer-serving-signer. The type of
+                  the secret must be kubernetes.io/tls.
                 properties:
                   name:
                     description: name is unique within a namespace to reference a
@@ -341,8 +342,9 @@ spec:
                 type: array
               ingressCertRef:
                 description: IngressCertRef is a reference to a TLS secret that will
-                  be used for the Ingress Controller. If it is omitted, a self-signed
-                  certificate will be generated. The type of the secret must be kubernetes.io/tls.
+                  be used for the Ingress Controller. If it is omitted, a certificate
+                  will be generated and signed by loadbalancer-serving-signer. The
+                  type of the secret must be kubernetes.io/tls.
                 properties:
                   name:
                     description: name is unique within a namespace to reference a
