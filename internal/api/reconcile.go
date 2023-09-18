@@ -36,7 +36,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 			if !ok {
 				logger.Info("generating new TLS cert for API")
 				var err error
-				secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "api")
+				secret.Data, err = secrets.GenerateTLSKeyPair(ctx, c, relocation.Spec.Domain, "api")
 				if err != nil {
 					return err
 				}
@@ -49,7 +49,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 				if commonName != fmt.Sprintf("api.%s", relocation.Spec.Domain) {
 					logger.Info("Domain name has changed, generating new TLS certificate for API")
 					var err error
-					secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "api")
+					secret.Data, err = secrets.GenerateTLSKeyPair(ctx, c, relocation.Spec.Domain, "api")
 					if err != nil {
 						return err
 					}

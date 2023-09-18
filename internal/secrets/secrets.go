@@ -44,7 +44,29 @@ func GetCertCommonName(TLSCertKey []byte) (string, error) {
 	return cert.Subject.CommonName, nil
 }
 
-func GenerateTLSKeyPair(domain string, prefix string) (map[string][]byte, error) {
+func GenerateTLSKeyPair(ctx context.Context, c client.Client, domain string, prefix string) (map[string][]byte, error) {
+	// Sign the certificate using loadbalancer-serving-signer
+	lbSigningSecret := &corev1.Secret{}
+	if err := c.Get(ctx, types.NamespacedName{Name: "loadbalancer-serving-signer", Namespace: "openshift-kube-apiserver-operator"}, lbSigningSecret); err != nil {
+		return nil, err
+	}
+	certBlock, _ := pem.Decode(lbSigningSecret.Data[corev1.TLSCertKey])
+	if certBlock == nil {
+		return nil, fmt.Errorf("could not decode loadbalancer-serving-signer certificate")
+	}
+	lbSigningCert, err := x509.ParseCertificate(certBlock.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	keyBlock, _ := pem.Decode(lbSigningSecret.Data[corev1.TLSPrivateKeyKey])
+	if keyBlock == nil {
+		return nil, fmt.Errorf("could not decode loadbalancer-serving-signer private key")
+	}
+	lbSigningPrivateKey, err := x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
 	// Generate a private key
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -62,7 +84,7 @@ func GenerateTLSKeyPair(domain string, prefix string) (map[string][]byte, error)
 	}
 
 	// Create a self-signed certificate using the private key and certificate template
-	derBytes, err := x509.CreateCertificate(rand.Reader, &certificateTemplate, &certificateTemplate, &privateKey.PublicKey, privateKey)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &certificateTemplate, lbSigningCert, &privateKey.PublicKey, lbSigningPrivateKey)
 	if err != nil {
 		return nil, err
 	}
