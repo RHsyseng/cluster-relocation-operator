@@ -7,7 +7,7 @@
 ## Description
 This operator can assist in reconfiguring a cluster once it has been moved to a new location. It performs the following steps:
 
-* Update the API and Ingress domain aliases using a generated self-signed certificate, or using a user provided certificate.
+* Update the API and Ingress domain aliases using a generated certificate (signed by loadbalancer-serving-signer), or using a user provided certificate.
 * Update the internal DNS records for the API and Ingress (SNO only).
 * (Optional) Update the cluster-wide pull secret.
 * (Optional) Add new SSH keys for the 'core' user.

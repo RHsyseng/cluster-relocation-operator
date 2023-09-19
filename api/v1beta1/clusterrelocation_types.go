@@ -38,7 +38,7 @@ type ClusterRelocationSpec struct {
 	AddInternalDNSEntries *bool `json:"addInternalDNSEntries,omitempty"`
 
 	// APICertRef is a reference to a TLS secret that will be used for the API server.
-	// If it is omitted, a self-signed certificate will be generated.
+	// If it is omitted, a certificate will be generated and signed by loadbalancer-serving-signer.
 	// The type of the secret must be kubernetes.io/tls.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	APICertRef *corev1.SecretReference `json:"apiCertRef,omitempty"`
@@ -56,7 +56,7 @@ type ClusterRelocationSpec struct {
 	ImageDigestMirrors []configv1.ImageDigestMirrors `json:"imageDigestMirrors,omitempty"`
 
 	// IngressCertRef is a reference to a TLS secret that will be used for the Ingress Controller.
-	// If it is omitted, a self-signed certificate will be generated.
+	// If it is omitted, a certificate will be generated and signed by loadbalancer-serving-signer.
 	// The type of the secret must be kubernetes.io/tls.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec
 	IngressCertRef *corev1.SecretReference `json:"ingressCertRef,omitempty"`

@@ -23,7 +23,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	var origSecretName string
 	var origSecretNamespace string
 	if relocation.Spec.APICertRef == nil {
-		// If they haven't specified an APICertRef, we generate a self-signed certificate for them
+		// If they haven't specified an APICertRef, we generate a certificate for them
 		origSecretName = "generated-api-secret"
 		origSecretNamespace = rhsysenggithubiov1beta1.ConfigNamespace
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
@@ -36,7 +36,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 			if !ok {
 				logger.Info("generating new TLS cert for API")
 				var err error
-				secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "api")
+				secret.Data, err = secrets.GenerateTLSKeyPair(ctx, c, relocation.Spec.Domain, "api")
 				if err != nil {
 					return err
 				}
@@ -49,7 +49,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 				if commonName != fmt.Sprintf("api.%s", relocation.Spec.Domain) {
 					logger.Info("Domain name has changed, generating new TLS certificate for API")
 					var err error
-					secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "api")
+					secret.Data, err = secrets.GenerateTLSKeyPair(ctx, c, relocation.Spec.Domain, "api")
 					if err != nil {
 						return err
 					}
@@ -63,7 +63,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
-			logger.Info("Self-signed API TLS cert modified", "OperationResult", op)
+			logger.Info("API TLS cert modified", "OperationResult", op)
 		}
 	} else {
 		if relocation.Spec.APICertRef.Name == "" || relocation.Spec.APICertRef.Namespace == "" {

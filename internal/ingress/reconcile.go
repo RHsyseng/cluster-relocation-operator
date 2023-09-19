@@ -29,7 +29,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 	var origSecretName string
 	var origSecretNamespace string
 	if relocation.Spec.IngressCertRef == nil {
-		// If they haven't specified an IngressCertRef, we generate a self-signed certificate for them
+		// If they haven't specified an IngressCertRef, we generate a certificate for them
 		origSecretName = "generated-ingress-secret"
 		origSecretNamespace = rhsysenggithubiov1beta1.IngressNamespace
 		secret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: origSecretName, Namespace: origSecretNamespace}}
@@ -42,7 +42,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 			if !ok {
 				logger.Info("generating new TLS cert for Ingresses")
 				var err error
-				secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "*.apps")
+				secret.Data, err = secrets.GenerateTLSKeyPair(ctx, c, relocation.Spec.Domain, "*.apps")
 				if err != nil {
 					return err
 				}
@@ -55,7 +55,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 				if commonName != fmt.Sprintf("*.apps.%s", relocation.Spec.Domain) {
 					logger.Info("Domain name has changed, generating new TLS certificate for Ingresses")
 					var err error
-					secret.Data, err = secrets.GenerateTLSKeyPair(relocation.Spec.Domain, "*.apps")
+					secret.Data, err = secrets.GenerateTLSKeyPair(ctx, c, relocation.Spec.Domain, "*.apps")
 					if err != nil {
 						return err
 					}
@@ -69,7 +69,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 			return err
 		}
 		if op != controllerutil.OperationResultNone {
-			logger.Info("Self-signed Ingress TLS cert modified", "OperationResult", op)
+			logger.Info("Ingress TLS cert modified", "OperationResult", op)
 		}
 
 		secretName := origSecretName
