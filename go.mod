@@ -9,7 +9,7 @@ require (
 	github.com/openshift/machine-config-operator v0.0.1-0.20230526005055-5843b7a4b27f
 	github.com/operator-framework/api v0.17.6
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20230528112800-a466a2368df4
-	golang.org/x/mod v0.12.0
+	golang.org/x/mod v0.13.0
 	k8s.io/apimachinery v0.26.9
 	k8s.io/client-go v0.26.9
 	sigs.k8s.io/controller-runtime v0.14.6
@@ -21,7 +21,7 @@ require (
 	github.com/google/pprof v0.0.0-20210720184732-4bb14d4b1be1 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/stolostron/cluster-lifecycle-api v0.0.0-20220621134646-8b67f2e6afed // indirect
-	golang.org/x/tools v0.12.0 // indirect
+	golang.org/x/tools v0.13.0 // indirect
 	open-cluster-management.io/api v0.12.0
 )
 
@@ -60,11 +60,11 @@ require (
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0
-	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
