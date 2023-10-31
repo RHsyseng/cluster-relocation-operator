@@ -51,6 +51,7 @@ func Reconcile(ctx context.Context, c client.Client, scheme *runtime.Scheme, rel
 		op, err := controllerutil.CreateOrUpdate(ctx, c, catalogSource, func() error {
 			catalogSource.Spec.Image = v.Image
 			catalogSource.Spec.SourceType = operatorhubv1alpha1.SourceTypeGrpc
+			catalogSource.Spec.UpdateStrategy.RegistryPoll = &operatorhubv1alpha1.RegistryPoll{RawInterval: "24h"}
 			// Set the controller as the owner so that the CatalogSource is deleted along with the CR
 			return controllerutil.SetControllerReference(relocation, catalogSource, scheme)
 		})
