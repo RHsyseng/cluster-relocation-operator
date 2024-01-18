@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  OPERATOR_OCP_VERSION: "4.13.0"
-  OPERATOR_SDK_VERSION: "v1.28.0"
+  OPERATOR_OCP_VERSION: "4.14.0"
+  OPERATOR_SDK_VERSION: "v1.31.0"
   SUPPORTED_OCP_VERSIONS: "v4.12-v4.14"
 
 jobs:
