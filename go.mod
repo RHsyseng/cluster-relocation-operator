@@ -10,8 +10,8 @@ require (
 	github.com/operator-framework/api v0.17.6
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20230528112800-a466a2368df4
 	golang.org/x/mod v0.15.0
-	k8s.io/apimachinery v0.26.13
-	k8s.io/client-go v0.26.13
+	k8s.io/apimachinery v0.26.14
+	k8s.io/client-go v0.26.14
 	sigs.k8s.io/controller-runtime v0.14.7
 )
 
@@ -72,7 +72,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.26.13
+	k8s.io/api v0.26.14
 	k8s.io/apiextensions-apiserver v0.26.10 // indirect
 	k8s.io/component-base v0.26.10 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
