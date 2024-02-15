@@ -10,7 +10,7 @@ require (
 	github.com/operator-framework/api v0.17.6
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20230528112800-a466a2368df4
 	golang.org/x/mod v0.15.0
-	k8s.io/apimachinery v0.26.13
+	k8s.io/apimachinery v0.26.14
 	k8s.io/client-go v0.26.13
 	sigs.k8s.io/controller-runtime v0.14.7
 )
