@@ -10,7 +10,7 @@ require (
 	github.com/operator-framework/api v0.17.6
 	github.com/stolostron/klusterlet-addon-controller v0.0.0-20230528112800-a466a2368df4
 	golang.org/x/mod v0.16.0
-	k8s.io/apimachinery v0.26.14
+	k8s.io/apimachinery v0.26.15
 	k8s.io/client-go v0.26.14
 	sigs.k8s.io/controller-runtime v0.14.7
 )
@@ -39,7 +39,7 @@ require (
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
